@@ -1,0 +1,4 @@
+my-nextjs-frontend/
+  public/
+    myimage.png
+    anotherimage.jpg

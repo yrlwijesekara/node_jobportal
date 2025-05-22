@@ -1,0 +1,330 @@
+.signupContainer {
+  min-height: 100vh;
+  background: #FAFAFA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 45px;
+}
+
+.signupBox {
+  display: flex;
+  flex-direction: row;
+  background: #fff;
+  border-radius: 32px;
+  box-shadow: 0 8px 48px rgba(0,0,0,0.10);
+  overflow: hidden;
+  min-width: 900px;
+  min-height: 650px;
+}
+
+/* Form Section */
+.formSection {
+  background: #0055A2;
+  border-radius: 27px 0 0 27px;
+  width: 504px;
+  min-height: 614px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 48px 40px 32px 40px;
+  box-shadow: 0px 4px 40px -16px rgba(0,0,0,0.18);
+  backdrop-filter: blur(2px);
+}
+
+.loginTitle {
+  font-family: 'Lato', sans-serif;
+  font-weight: 700;
+  font-size: 50px;
+  line-height: 60px;
+  color: #fff;
+  margin-bottom: 32px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+}
+
+.loginLabel {
+  font-family: 'Lato', sans-serif;
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 24px;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.loginInput {
+  width: 100%;
+  height: 58px;
+  background: #fff;
+  border-radius: 100px;
+  border: none;
+  padding: 0 24px;
+  font-size: 20px;
+  color: #0055A2;
+  margin-bottom: 8px;
+  outline: none;
+  box-sizing: border-box;
+  backdrop-filter: blur(2px);
+}
+
+.loginBtn {
+  width: 100%;
+  height: 58px;
+  background: #fff;
+  color: #2D46CE;
+  font-family: 'Lato', sans-serif;
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 36px;
+  border: none;
+  border-radius: 100px;
+  margin: 24px 0 0 0;
+  cursor: pointer;
+  transition: background 0.2s;
+  backdrop-filter: blur(2px);
+}
+
+.loginBtn:hover {
+  background: #e7fcfb;
+}
+
+.loginBottomRow {
+  display: flex;
+  align-items: center;
+  margin-top: 18px;
+  gap: 8px;
+}
+
+.loginSmallText {
+  font-family: 'Lato', sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 18px;
+  color: #fff;
+}
+
+.loginSignUpLink {
+  font-family: 'Lato', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 19px;
+  color: #fff;
+  text-decoration: underline;
+  margin-left: 4px;
+}
+
+.loginOrRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 16px;
+  gap: 12px;
+}
+
+.loginLine {
+  flex: 1;
+  height: 0;
+  border-top: 3px solid #fff;
+  border-radius: 2px;
+  min-width: 60px;
+}
+
+.loginOr {
+  font-family: 'Lato', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 17px;
+  color: #fff;
+  margin: 0 8px;
+}
+
+.loginSocialRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-top: 18px;
+}
+
+.loginSocialIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #fff;
+  object-fit: cover;
+  box-shadow: 0px 4px 4px rgba(0,0,0,0.15);
+  border: 1px solid #00000010;
+}
+
+/* Illustration */
+.illustration {
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 400px;
+  min-height: 614px;
+  padding: 0 32px;
+}
+
+.illustration img {
+  width: 100%;
+  max-width: 350px;
+  height: auto;
+  object-fit: contain;
+}
+
+/* Register Form Two-Column Layout */
+/* Title in blue box */
+.registerTitleBox {
+  width: fit-content;
+  background: #0055A2;
+  border-radius: 0 0 0 0;
+  padding: 0 0 0 8px;
+  margin-bottom: 24px;
+  
+}
+.registerTitle {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 56px;
+  line-height: 1.1;
+  color: #fff;
+  display: block;
+}
+
+/* Two-column form */
+.registerForm {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 32px;
+  
+}
+
+/* Labels column as blue rounded boxes */
+.registerLabels {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  min-width: 220px;
+  margin-top: 8px;
+}
+.registerLabelBox {
+  background: #0055A2;
+  border-radius: 20px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  font-family: 'Lato', sans-serif;
+  font-weight: 700;
+  font-size: 24px;
+  color: #fff;
+  min-width: 200px;
+}
+
+/* Divider */
+.registerDivider {
+  width: 2px;
+  height: 240px;
+  background: #fff;
+  margin: 0 10px;
+  align-self: center;
+  opacity: 0.7;
+}
+
+/* Inputs column */
+.registerInputs {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  min-width: 320px;
+  flex: 1;
+}
+
+.registerInput {
+  width: 100%;
+  height: 56px;
+  background: #fff;
+  border-radius: 30px;
+  border: none;
+  padding: 0 24px;
+  font-size: 22px;
+  color: #0055A2;
+  outline: none;
+  box-sizing: border-box;
+}
+
+/* Button row */
+.registerBtnRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 32px;
+}
+
+.registerBtn {
+  width: 99px;
+  height: 34px;
+  background: #fff;
+  color: #0055A2;
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 29px;
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Vertical register form layout */
+.registerFormVertical {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.registerInputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.registerLabel {
+  font-family: 'Lato', sans-serif;
+  font-weight: 700;
+  font-size: 22px;
+  color: #fff;
+  margin-bottom: 2px;
+  margin-left: 4px;
+}
+
+.registerInput {
+  width: 100%;
+  height: 56px;
+  background: #fff;
+  border-radius: 30px;
+  border: none;
+  padding: 0 24px;
+  font-size: 22px;
+  color: #0055A2;
+  outline: none;
+  box-sizing: border-box;
+}
+
+

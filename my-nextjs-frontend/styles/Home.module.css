@@ -1,0 +1,287 @@
+.container {
+  min-height: 100vh;
+  background: #f7f7f7;
+}
+
+.topSection {
+  background: #0E1338;
+  /* Deep blue */
+  border-bottom-left-radius: 48px;
+  border-bottom-right-radius: 48px;
+  padding-bottom: 40px;
+  padding-top: 16px;
+  min-height: 380px;
+  position: relative;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 45px;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
+  margin: 0 auto 24px auto;
+  padding: 16px 32px;
+  gap: 32px;
+  max-width: 1800px;
+  position: relative;
+  top: 0;
+}
+
+.logo {
+  height: 60px;
+}
+
+.title {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 30px;
+  color: #0055A2;
+  margin-right: auto;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  font-family: 'Inter', sans-serif;
+  font-size: 25px;
+}
+
+.nav a {
+  color: #000;
+  text-decoration: none;
+  font-weight: 400;
+}
+
+.banner {
+  display: flex;
+  justify-content: center;
+  margin: 0;
+}
+
+.bannerImg {
+  max-width: 1000px;
+  width: 100%;
+  border-radius: 16px;
+  margin-top: 16px;
+}
+
+.cards {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin: 32px 0;
+  flex-wrap: wrap;
+}
+
+.card {
+  background: #fff;
+  border-radius: 29px;
+  box-shadow: 0 0 30px -8px rgba(0, 0, 0, 0.25);
+  width: 395px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding-bottom: 24px;
+  min-height: 480px;
+  /* Make all cards the same height */
+  position: relative;
+}
+
+.cardHeader {
+  background: #0055A2;
+  color: #fff;
+  width: 395px;
+  height: 104px;
+  border-radius: 30px 30px 0 0;
+  font-size: 25px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin: 0 auto;
+  box-sizing: border-box;
+  padding: 0;
+  /* Remove extra padding for perfect vertical centering */
+}
+
+.cardBody {
+  padding: 16px;
+  color: #000;
+  font-size: 14px;
+  font-weight: 400;
+  flex: 1 1 auto;
+  /* Take up available space */
+  display: flex;
+  flex-direction: column;
+}
+
+.cardBody ul {
+  margin: 12px 0 0 18px;
+  padding-left: 18px;
+  list-style-type: disc;
+  /* default bullet */
+}
+
+.cardBody li {
+  margin-bottom: 6px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.applyBtn {
+  margin: 0 16px 0 16px;
+  background: #4DB848;
+  color: #fff;
+  border: none;
+  border-radius: 42px;
+  padding: 12px 48px;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+  align-self: center;
+  margin-top: auto;
+  /* Push button to the bottom */
+}
+
+.applyBtn:hover {
+  background: #3ca03a;
+}
+
+.footer {
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+  padding: 40px 32px;
+  margin-top: 48px;
+}
+
+.footerColumns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 48px;
+  justify-content: space-between;
+}
+
+.footerTitle {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 12px;
+  color: #000;
+}
+
+.footerLink {
+  display: block;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: #000;
+  text-decoration: underline;
+  margin-bottom: 6px;
+}
+
+.footerText {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: #000;
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+
+.socialBox {
+  display: flex;
+  align-items: flex-start;
+  margin-top: 8px;
+}
+
+.socialIcons {
+  display: flex;
+  gap: 12px;
+}
+
+.socialIcons img {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s;
+}
+
+.socialIcons img:hover {
+  transform: scale(1.1);
+}
+
+/* About Us Section */
+.aboutSection {
+  position: relative;
+  margin: 70px auto 0 auto;
+  max-width: 1200px;
+  padding: 40px 0 0 0;
+
+}
+
+.aboutTitle {
+  font-family: 'Lato', sans-serif;
+  font-weight: 700;
+  font-size: 53px;
+  line-height: 64px;
+  color: #0055A2;
+  margin-bottom: 32px;
+}
+
+.aboutContent {
+  display: flex;
+  flex-direction: row;
+  gap: 48px;
+  align-items: flex-start;
+}
+
+.aboutText {
+  font-family: 'Lato', sans-serif;
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 31px;
+  color: #101010;
+  max-width: 550px;
+  text-align: justify;
+}
+
+.aboutImageBox {
+
+
+
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+}
+
+.aboutImage {
+  width: 100%;
+  height: 100%;
+  object-fit: relative;
+
+}
+
+.learnMoreBtn {
+  display: inline-block;
+  margin-top: 30px;
+  background: #0055A2;
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-size: 32px;
+  font-weight: 400;
+  border-radius: 39px;
+  padding: 18px 48px;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.learnMoreBtn:hover {
+  background: #003d73;
+}
