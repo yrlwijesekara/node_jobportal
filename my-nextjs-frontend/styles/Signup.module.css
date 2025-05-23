@@ -157,11 +157,12 @@
 }
 
 .loginSocialIcon {
+  
   width: 40px;
   height: 40px;
-  border-radius: 12px;
-  background: #fff;
-  object-fit: cover;
+  border-radius: 20px;
+  background: transparent;
+  object-fit: contain;
   box-shadow: 0px 4px 4px rgba(0,0,0,0.15);
   border: 1px solid #00000010;
 }

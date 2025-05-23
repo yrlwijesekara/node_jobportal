@@ -15,7 +15,7 @@ export default function Home() {
             <span>|</span>
             <a href="/about">About Us</a>
             <span>|</span>
-            <a href="#">Vacancies</a>
+            <a href="/vacancies">Vacancies</a>
             <span>|</span>
             <a href="/login">Login</a>
           </nav>

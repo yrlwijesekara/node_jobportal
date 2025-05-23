@@ -11,9 +11,9 @@ export default function About() {
         <nav className={styles.nav}>
           <a href="/">Home</a>
           <span>|</span>
-          <a href="#">About Us</a>
+          <a href="/about">About Us</a>
           <span>|</span>
-          <a href="#">Vacancies</a>
+          <a href="/vacancies">Vacancies</a>
           <span>|</span>
           <a href="/login">Login</a>
         </nav>
