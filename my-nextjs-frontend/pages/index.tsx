@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styles from '../styles/Home.module.css';
 
 export default function Home() {
+  const [navOpen, setNavOpen] = useState(false);
+
   return (
     <div className={styles.container}>
       {/* Blue Top Section */}
@@ -10,8 +12,17 @@ export default function Home() {
         <header className={styles.topBar}>
           <img src="/logo.png" alt="Logo" className={styles.logo} />
           <span className={styles.title}>Training Program</span>
-          <nav className={styles.nav}>
-            <a href="/home">Home</a>
+          {/* Hamburger icon for mobile */}
+          <div
+            className={styles.hamburger}
+            onClick={() => setNavOpen((open) => !open)}
+          >
+            <span />
+            <span />
+            <span />
+          </div>
+          <nav className={`${styles.nav} ${navOpen ? styles.open : ''}`}>
+            <a href="/">Home</a>
             <span>|</span>
             <a href="/about">About Us</a>
             <span>|</span>

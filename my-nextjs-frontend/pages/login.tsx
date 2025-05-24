@@ -1,14 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/router';
-import styles from '../styles/Signup.module.css'; // Or Login.module.css if you separate
+import styles from '../styles/Signup.module.css';
+import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
   const router = useRouter();
+  const { login } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // You can add validation/auth logic here if needed
-    router.push('/');
+    // Simple admin check
+    const isAdmin = email === "admin@example.com" && password === "admin123";
+    login(isAdmin ? "admin" : "user");
+    if (isAdmin) {
+      router.replace('/job-creation');
+    } else {
+      const redirect = router.query.redirect as string;
+      router.replace(redirect || '/');
+    }
   };
 
   return (
@@ -20,11 +31,23 @@ export default function Login() {
           <form className={styles.form} onSubmit={handleSubmit}>
             <div className={styles.inputGroup}>
               <label className={styles.loginLabel}>Email address :</label>
-              <input className={styles.loginInput} type="email" required />
+              <input
+                className={styles.loginInput}
+                type="email"
+                required
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+              />
             </div>
             <div className={styles.inputGroup}>
               <label className={styles.loginLabel} style={{ fontSize: 22, lineHeight: '26px' }}>Password :</label>
-              <input className={styles.loginInput} type="password" required />
+              <input
+                className={styles.loginInput}
+                type="password"
+                required
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+              />
             </div>
             <button className={styles.loginBtn} type="submit">Sign In</button>
           </form>
