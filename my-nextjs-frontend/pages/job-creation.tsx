@@ -1,9 +1,12 @@
 import React from "react";
+import { useRouter } from "next/router";
 import styles from "../styles/JobCreation.module.css";
 import homeStyles from "../styles/Home.module.css"; // Import Home styles
 
 
 export default function JobCreation() {
+  const router = useRouter();
+
   return (
     <>
       {/* Top Navbar */}
@@ -13,7 +16,7 @@ export default function JobCreation() {
         <nav className={homeStyles.nav}>
           <a href="/">Home</a>
           <span>|</span>
-          <a href="/logout">Logout</a>
+          <a href="/login">Logout</a>
         </nav>
       </header>
 
@@ -22,7 +25,13 @@ export default function JobCreation() {
         <aside className={styles.sidebar}>
           <div className={styles.menu}>
             <div className={styles.menuItemActive}>▶ Job Creation</div>
-            <div className={styles.menuItem}>▶ Job Modification</div>
+            <div
+              className={styles.menuItem}
+              onClick={() => router.push("/job-modification")}
+              style={{ cursor: "pointer" }}
+            >
+              ▶ Job Modification
+            </div>
             <div className={styles.menuItem}>▶ Received CVs</div>
             <div className={styles.menuItem}>▶ Accepted CVs</div>
           </div>
