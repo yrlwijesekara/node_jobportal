@@ -4,10 +4,29 @@ import styles from "../styles/JobCreation.module.css";
 import homeStyles from "../styles/Home.module.css";
 
 const initialJobs = [
-  { id: "IT", field: "QA Trainee", date: "2023/10/14", status: "Rejected" },
-  { id: "HR", field: "HR Trainee", date: "2023/09/11", status: "Accepted" },
-  { id: "Finance", field: "Accountant", date: "2023/08/16", status: "Rejected" },
-  { id: "IT", field: "Web Developer", date: "2023/08/02", status: "Accepted" },
+  {
+    id: "IT001",
+    jobTitle: "Software",
+    name: "Dinith",
+    gender: "Male",
+    field: "IT",
+    contact: "074 3231211",
+    cv: "dinith.pdf",
+    date: "2023/10/14",
+    status: "Rejected"
+  },
+  {
+    id: "TEL002",
+    jobTitle: "Telecommunication",
+    name: "Dilshara",
+    gender: "Male",
+    field: "IT",
+    contact: "074 3231211",
+    cv: "dilshara.pdf",
+    date: "2023/09/11",
+    status: "Accepted"
+  }
+  // Add more jobs as needed
 ];
 
 export default function JobModification() {
@@ -56,15 +75,23 @@ export default function JobModification() {
               onClick={() => router.push("/job-creation")}
               style={{ cursor: "pointer" }}
             >
-              <span className={styles.triangle} />▶ job Creation
+              <span className={styles.triangle} />▶ Job creation
             </div>
             <div className={`${styles.menuItem} ${styles.menuItemActive}`}>
-              <span className={styles.triangle} />▶ job Modification
+              <span className={styles.triangle} />▶ Job Modification
             </div>
-            <div className={styles.menuItem}>
+            <div
+              className={styles.menuItem}
+              onClick={() => router.push("/received-cvs")}
+              style={{ cursor: "pointer" }}
+            >
               <span className={styles.triangle} />▶ Received CVs
             </div>
-            <div className={styles.menuItem}>
+            <div
+              className={styles.menuItem}
+              onClick={() => router.push("/accepted-cvs")}
+              style={{ cursor: "pointer" }}
+            >
               <span className={styles.triangle} />▶ Accepted CVs
             </div>
           </div>

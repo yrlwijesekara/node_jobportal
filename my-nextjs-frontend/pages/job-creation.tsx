@@ -33,7 +33,13 @@ export default function JobCreation() {
               ▶ Job Modification
             </div>
             <div className={styles.menuItem}>▶ Received CVs</div>
-            <div className={styles.menuItem}>▶ Accepted CVs</div>
+            <div
+              className={styles.menuItem}
+              onClick={() => router.push("/accepted-cvs")}
+              style={{ cursor: "pointer" }}
+            >
+              ▶ Accepted CVs
+            </div>
           </div>
         </aside>
         <main className={styles.content}>
