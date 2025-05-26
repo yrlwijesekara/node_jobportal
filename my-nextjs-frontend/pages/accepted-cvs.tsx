@@ -2,28 +2,12 @@ import React from "react";
 import styles from "../styles/JobCreation.module.css";
 import homeStyles from "../styles/Home.module.css";
 import { useRouter } from "next/router";
-
-const acceptedCVs = [
-  {
-    jobTitle: "Software",
-    name: "QA Trainee",
-    gender: "",
-    field: "",
-    contact: "",
-    cv: "",
-  },
-  {
-    jobTitle: "Telecommunication",
-    name: "Trainee",
-    gender: "",
-    field: "",
-    contact: "",
-    cv: "",
-  },
-];
+import { useJobs } from "../context/JobsContext";
 
 export default function AcceptedCVs() {
   const router = useRouter();
+  const { jobs } = useJobs();
+  const acceptedJobs = jobs.filter((job: { status: string; }) => job.status === "Accepted");
 
   return (
     <>
@@ -85,16 +69,30 @@ export default function AcceptedCVs() {
                 </tr>
               </thead>
               <tbody>
-                {acceptedCVs.map((cv, idx) => (
-                  <tr key={idx}>
-                    <td>{cv.jobTitle}</td>
-                    <td>{cv.name}</td>
-                    <td>{cv.gender}</td>
-                    <td>{cv.field}</td>
-                    <td>{cv.contact}</td>
-                    <td>{cv.cv}</td>
+                {acceptedJobs.length === 0 ? (
+                  <tr>
+                    <td colSpan={6}>No accepted CVs found.</td>
                   </tr>
-                ))}
+                ) : (
+                  acceptedJobs.map((job: { jobTitle: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; name: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; gender: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; field: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; contact: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; cv: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; }, idx: React.Key | null | undefined) => (
+                    <tr key={idx}>
+                      <td>{job.jobTitle}</td>
+                      <td>{job.name}</td>
+                      <td>{job.gender}</td>
+                      <td>{job.field}</td>
+                      <td>{job.contact}</td>
+                      <td>
+                        <a
+                          href={`/${job.cv}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {job.cv}
+                        </a>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

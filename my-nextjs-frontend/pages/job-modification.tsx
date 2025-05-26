@@ -1,42 +1,17 @@
 import React, { useState } from "react";
 import { useRouter } from "next/router";
+import { useJobs } from "../context/JobsContext";
 import styles from "../styles/JobCreation.module.css";
 import homeStyles from "../styles/Home.module.css";
 
-const initialJobs = [
-  {
-    id: "IT001",
-    jobTitle: "Software",
-    name: "Dinith",
-    gender: "Male",
-    field: "IT",
-    contact: "074 3231211",
-    cv: "dinith.pdf",
-    date: "2023/10/14",
-    status: "Rejected"
-  },
-  {
-    id: "TEL002",
-    jobTitle: "Telecommunication",
-    name: "Dilshara",
-    gender: "Male",
-    field: "IT",
-    contact: "074 3231211",
-    cv: "dilshara.pdf",
-    date: "2023/09/11",
-    status: "Accepted"
-  }
-  // Add more jobs as needed
-];
-
 export default function JobModification() {
   const router = useRouter();
-  const [jobs, setJobs] = useState(initialJobs);
+  const { jobs, setJobs } = useJobs();
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [search, setSearch] = useState("");
 
   const handleStatusChange = (idx: number, newStatus: string) => {
-    setJobs(jobs =>
+    setJobs((jobs: any[]) =>
       jobs.map((job, i) =>
         i === idx ? { ...job, status: newStatus } : job
       )
@@ -45,11 +20,11 @@ export default function JobModification() {
   };
 
   const handleDelete = (idx: number) => {
-    setJobs(jobs => jobs.filter((_, i) => i !== idx));
+    setJobs((jobs: any[]) => jobs.filter((_, i) => i !== idx));
   };
 
   // Filter jobs by Job ID (case-insensitive, partial match)
-  const filteredJobs = jobs.filter(job =>
+  const filteredJobs = jobs.filter((job: { id: string; }) =>
     job.id.toLowerCase().includes(search.trim().toLowerCase())
   );
 
@@ -131,7 +106,7 @@ export default function JobModification() {
                     <td colSpan={5}>No jobs found.</td>
                   </tr>
                 ) : (
-                  filteredJobs.map((job, idx) => (
+                  filteredJobs.map((job: { id: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; field: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; date: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; status: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; }, idx: React.Key | null | undefined) => (
                     <tr key={idx}>
                       <td>{job.id}</td>
                       <td>{job.field}</td>
@@ -139,7 +114,7 @@ export default function JobModification() {
                       <td>
                         {editIndex === jobs.indexOf(job) ? (
                           <select
-                            value={job.status}
+                            value={job.status ?? ""}
                             onChange={e => handleStatusChange(jobs.indexOf(job), e.target.value)}
                             style={{ fontSize: "15px", borderRadius: "8px", padding: "4px 8px" }}
                           >
