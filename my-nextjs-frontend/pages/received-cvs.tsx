@@ -79,6 +79,25 @@ export default function ReceivedCVs() {
     }
   };
 
+  // Handle application deletion
+  const handleDeleteApplication = (index: number) => {
+    // Confirm before deleting
+    if (window.confirm("Are you sure you want to delete this application? This action cannot be undone.")) {
+      // Create a new array without the deleted application
+      const updatedApplications = applications.filter((_, idx) => idx !== index);
+      
+      // Update state
+      setApplications(updatedApplications);
+      setFilteredApplications(updatedApplications);
+      
+      // Update localStorage
+      localStorage.setItem("applications", JSON.stringify(updatedApplications));
+      
+      // Show confirmation
+      alert("Application has been deleted successfully");
+    }
+  };
+
   return (
     <>
       {/* Top Navbar */}
@@ -227,6 +246,21 @@ export default function ReceivedCVs() {
                           }}
                         >
                           📥 CV
+                        </button>
+                        <button
+                          className={styles.deleteBtn}
+                          onClick={() => handleDeleteApplication(idx)}
+                          style={{ 
+                            background: "#dc3545",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "4px",
+                            padding: "5px 10px",
+                            marginLeft: "5px",
+                            cursor: "pointer"
+                          }}
+                        >
+                          🗑️ Delete
                         </button>
                       </td>
                     </tr>
