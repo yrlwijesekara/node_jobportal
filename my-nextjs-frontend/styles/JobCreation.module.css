@@ -381,6 +381,44 @@
   background: #e6f0fa;
 }
 
+/* Select Input Styles */
+.selectInput {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+  background-color: white;
+}
+
+.selectInput:focus {
+  outline: none;
+  border-color: #0055A2;
+}
+
+/* Pending Status Style */
+.pending {
+  background-color: #ffd700;
+  color: #333;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+  display: inline-block;
+}
+
+/* Button Hover Effects */
+.viewBtn:hover {
+  background: #003c73;
+}
+
+.editBtn:hover {
+  background: #333;
+}
+
+.downloadBtn:hover {
+  background: #218838 !important;
+}
+
 /* Responsive styles */
 @media (max-width: 900px) {
   .formCard {

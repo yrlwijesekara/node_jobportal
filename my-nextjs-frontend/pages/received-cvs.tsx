@@ -1,29 +1,83 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import styles from "../styles/JobCreation.module.css";
 import homeStyles from "../styles/Home.module.css";
-import { useRouter } from "next/router";
 
-const cvs = [
-  {
-    jobTitle: "Software",
-    name: "Dinith",
-    gender: "Male",
-    field: "IT",
-    contact: "074 3231211",
-    cv: "dinith.pdf",
-  },
-  {
-    jobTitle: "Telecom.",
-    name: "Dilshara",
-    gender: "Male",
-    field: "IT",
-    contact: "074 3231211",
-    cv: "dilshara.pdf",
-  },
-];
+type Application = {
+  jobTitle: string;
+  nameWithInitials: string;
+  fullName: string;
+  email: string;
+  contactNumber: string;
+  field: string;
+  cvFileName: string | null;
+  submissionDate: string;
+  status: string;
+};
 
 export default function ReceivedCVs() {
   const router = useRouter();
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [filteredApplications, setFilteredApplications] = useState<Application[]>([]);
+  const [search, setSearch] = useState("");
+  const [editIndex, setEditIndex] = useState(-1);
+
+  // Load applications from localStorage on component mount
+  useEffect(() => {
+    const savedApplications = JSON.parse(localStorage.getItem("applications") || "[]");
+    setApplications(savedApplications);
+    setFilteredApplications(savedApplications);
+  }, []);
+
+  // Filter applications based on search input
+  useEffect(() => {
+    if (search) {
+      const filtered = applications.filter((app) =>
+        app.nameWithInitials.toLowerCase().includes(search.toLowerCase()) ||
+        app.jobTitle.toLowerCase().includes(search.toLowerCase())
+      );
+      setFilteredApplications(filtered);
+    } else {
+      setFilteredApplications(applications);
+    }
+  }, [search, applications]);
+
+  // Handle application status change
+  const handleStatusChange = (index: number, newStatus: string) => {
+    const updatedApplications = [...applications];
+    updatedApplications[index].status = newStatus;
+    
+    setApplications(updatedApplications);
+    localStorage.setItem("applications", JSON.stringify(updatedApplications));
+    setEditIndex(-1);
+    
+    // Show confirmation
+    alert(`Application status has been changed to ${newStatus}`);
+  };
+
+  // View CV details
+  const handleViewDetails = (app: Application) => {
+    alert(`
+      Job: ${app.jobTitle}
+      Name: ${app.fullName}
+      Email: ${app.email}
+      Contact: ${app.contactNumber}
+      Field: ${app.field}
+      CV: ${app.cvFileName || "No file"}
+      Submitted: ${new Date(app.submissionDate).toLocaleDateString()}
+    `);
+  };
+
+  // Download CV file (mock implementation)
+  const handleDownloadCV = (app: Application) => {
+    // In a real application, this would access file storage and download the actual file
+    // For this demo, we'll just show an alert
+    if (app.cvFileName) {
+      alert(`In a production environment, this would download the file: ${app.cvFileName}`);
+    } else {
+      alert("No CV file available for this application.");
+    }
+  };
 
   return (
     <>
@@ -47,62 +101,137 @@ export default function ReceivedCVs() {
               onClick={() => router.push("/job-creation")}
               style={{ cursor: "pointer" }}
             >
-              <span className={styles.triangle} />▶ Job Creation
+              ▶ Job Creation
             </div>
             <div
               className={styles.menuItem}
               onClick={() => router.push("/job-modification")}
               style={{ cursor: "pointer" }}
             >
-              <span className={styles.triangle} />▶ Job Modification
+              ▶ Job Modification
             </div>
-            <div
-              className={`${styles.menuItem} ${styles.menuItemActive}`}
-              onClick={() => router.push("/received-cvs")}
-              style={{ cursor: "pointer" }}
-            >
-              <span className={styles.triangle} />▶ Received CVs
+            <div className={`${styles.menuItem} ${styles.menuItemActive}`}>
+              ▶ Received CVs
             </div>
             <div
               className={styles.menuItem}
               onClick={() => router.push("/accepted-cvs")}
               style={{ cursor: "pointer" }}
             >
-              <span className={styles.triangle} />▶ Accepted CVs
+              ▶ Accepted CVs
             </div>
           </div>
         </aside>
 
-        {/* Main Content */}
         <main className={styles.content}>
-          <div className={styles.cvsCard}>
-            <h2 className={styles.cvsTitle}>Received CVs</h2>
-            <table className={styles.cvsTable}>
+          {/* Search Bar */}
+          <div className={styles.jobModSearchRow}>
+            <input
+              className={styles.jobModSearchInput}
+              type="text"
+              placeholder="Search by name or job title"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          {/* Applications Table */}
+          <div className={styles.jobModTableWrapper}>
+            <table className={styles.jobModTable}>
               <thead>
                 <tr>
                   <th>Job Title</th>
-                  <th>Name</th>
-                  <th>Gender</th>
-                  <th>Field</th>
-                  <th>Contact Number</th>
-                  <th>CV</th>
+                  <th>Applicant Name</th>
+                  <th>Submission Date</th>
+                  <th>Status</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {cvs.map((cv, idx) => (
-                  <tr key={idx}>
-                    <td>{cv.jobTitle}</td>
-                    <td>{cv.name}</td>
-                    <td>{cv.gender}</td>
-                    <td>{cv.field}</td>
-                    <td>{cv.contact}</td>
-                    <td>
-                      <a href={`/${cv.cv}`} target="_blank" rel="noopener noreferrer">
-                        {cv.cv}
-                      </a>
-                    </td>
+                {filteredApplications.length === 0 ? (
+                  <tr>
+                    <td colSpan={5}>No applications found.</td>
                   </tr>
-                ))}
+                ) : (
+                  filteredApplications.map((app, idx) => (
+                    <tr key={idx}>
+                      <td>{app.jobTitle}</td>
+                      <td>{app.nameWithInitials}</td>
+                      <td>{new Date(app.submissionDate).toLocaleDateString()}</td>
+                      <td>
+                        {editIndex === applications.indexOf(app) ? (
+                          <select
+                            value={app.status}
+                            onChange={(e) => handleStatusChange(applications.indexOf(app), e.target.value)}
+                            style={{ fontSize: "15px", borderRadius: "8px", padding: "4px 8px" }}
+                          >
+                            <option value="Pending">Pending</option>
+                            <option value="Shortlisted">Shortlisted</option>
+                            <option value="Rejected">Rejected</option>
+                          </select>
+                        ) : (
+                          <span
+                            className={
+                              app.status === "Shortlisted" 
+                                ? styles.accepted 
+                                : app.status === "Rejected" 
+                                ? styles.jobModRejected 
+                                : styles.pending
+                            }
+                          >
+                            {app.status}
+                          </span>
+                        )}
+                      </td>
+                      <td>
+                        <button
+                          className={styles.viewBtn}
+                          onClick={() => handleViewDetails(app)}
+                          style={{ 
+                            background: "#0055A2",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "4px",
+                            padding: "5px 10px",
+                            marginRight: "5px",
+                            cursor: "pointer"
+                          }}
+                        >
+                          View
+                        </button>
+                        <button
+                          className={styles.editBtn}
+                          onClick={() => setEditIndex(applications.indexOf(app))}
+                          style={{ 
+                            background: "#555",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "4px",
+                            padding: "5px 10px",
+                            cursor: "pointer" 
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className={styles.downloadBtn}
+                          onClick={() => handleDownloadCV(app)}
+                          style={{ 
+                            background: "#28a745",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "4px",
+                            padding: "5px 10px",
+                            marginLeft: "5px",
+                            cursor: "pointer"
+                          }}
+                        >
+                          📥 CV
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

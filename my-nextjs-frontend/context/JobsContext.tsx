@@ -10,7 +10,7 @@ const initialJobs = [
     contact: "074 3231211",
     cv: "dinith.pdf",
     date: "2023/10/14",
-    status: "Rejected"
+    status: "Accepted"
   },
   {
     id: "IT",

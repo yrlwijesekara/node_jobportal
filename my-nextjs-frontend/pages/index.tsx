@@ -54,7 +54,12 @@ export default function Home() {
               <li>Networking device configuration knowledge.</li>
             </ul>
           </div>
-          <button className={styles.applyBtn}>Apply Now</button>
+          <button 
+  className={styles.applyBtn} 
+  onClick={() => window.location.href = `/apply?jobTitle=${encodeURIComponent('Trainee Network Engineers')}`}
+>
+  Apply Now
+</button>
         </div>
         {/* Card 2 */}
         <div className={styles.card}>
@@ -69,7 +74,12 @@ export default function Home() {
               <li>Be a resilient leader with excellent interpersonal and communication skills.</li>
             </ul>
           </div>
-          <button className={styles.applyBtn}>Apply Now</button>
+          <button 
+  className={styles.applyBtn} 
+  onClick={() => window.location.href = `/apply?jobTitle=${encodeURIComponent('ACCOUNTANT-FINANCIAL ACCOUNTING')}`}
+>
+  Apply Now
+</button>
         </div>
         {/* Card 3 */}
         <div className={styles.card}>
@@ -83,7 +93,12 @@ export default function Home() {
               <li>Thorough knowledge and experience in the field of Data Centre Network Security...</li>
             </ul>
           </div>
-          <button className={styles.applyBtn}>Apply Now</button>
+          <button 
+  className={styles.applyBtn} 
+  onClick={() => window.location.href = `/apply?jobTitle=${encodeURIComponent('ENGINEERS')}`}
+>
+  Apply Now
+</button>
         </div>
         {/* Card 4 */}
         <div className={styles.card}>
@@ -98,7 +113,12 @@ export default function Home() {
               <li>Should have obtained Skilled Competence Certificate -NAITA in the relevant field equivalent to NVQ Level 4 (Telecommunication / Electrical/Electronic/ ICT/Power / Air Conditioning etc). </li>
             </ul>
           </div>
-          <button className={styles.applyBtn}>Apply Now</button>
+          <button 
+  className={styles.applyBtn} 
+  onClick={() => window.location.href = `/apply?jobTitle=${encodeURIComponent('TECHNICIANS')}`}
+>
+  Apply Now
+</button>
         </div>
       </section>
 

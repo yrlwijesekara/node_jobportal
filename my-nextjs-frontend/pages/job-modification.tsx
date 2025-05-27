@@ -1,32 +1,69 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { useJobs } from "../context/JobsContext";
 import styles from "../styles/JobCreation.module.css";
 import homeStyles from "../styles/Home.module.css";
 
+type Job = {
+  id: string;
+  field: string;
+  date: string;
+  status?: string;
+};
+
 export default function JobModification() {
   const router = useRouter();
-  const { jobs, setJobs } = useJobs();
-  const [editIndex, setEditIndex] = useState<number | null>(null);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [selectedJobId, setSelectedJobId] = useState("");
+  const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
   const [search, setSearch] = useState("");
+  const [editIndex, setEditIndex] = useState(-1);
 
-  const handleStatusChange = (idx: number, newStatus: string) => {
-    setJobs((jobs: any[]) =>
-      jobs.map((job, i) =>
-        i === idx ? { ...job, status: newStatus } : job
-      )
-    );
-    setEditIndex(null); // Hide select after change
+  // Load jobs from localStorage on component mount
+  useEffect(() => {
+    const savedJobs = JSON.parse(localStorage.getItem("jobs") || "[]");
+    setJobs(savedJobs);
+    setFilteredJobs(savedJobs);
+  }, []);
+
+  // Filter jobs based on search input
+  useEffect(() => {
+    if (search) {
+      const filtered = jobs.filter((job) =>
+        job.id.toLowerCase().includes(search.toLowerCase())
+      );
+      setFilteredJobs(filtered);
+    } else {
+      setFilteredJobs(jobs);
+    }
+  }, [search, jobs]);
+
+  // Handle job status change
+  const handleStatusChange = (index: number, newStatus: string) => {
+    console.log("Changing job status:", index, "to", newStatus);
+
+    const updatedJobs = [...jobs];
+    updatedJobs[index].status = newStatus; // Make sure status is exactly "Accepted" or "Rejected"
+
+    console.log("Updated job:", updatedJobs[index]);
+    setJobs(updatedJobs);
+
+    // Make sure localStorage is updated correctly
+    localStorage.setItem("jobs", JSON.stringify(updatedJobs));
+    setEditIndex(-1);
+
+    // Show confirmation to user
+    alert(`Job status has been changed to ${newStatus}`);
   };
 
-  const handleDelete = (idx: number) => {
-    setJobs((jobs: any[]) => jobs.filter((_, i) => i !== idx));
+  // Handle job deletion
+  const handleDelete = (index: number) => {
+    if (confirm("Are you sure you want to delete this job?")) {
+      const updatedJobs = jobs.filter((_, i) => i !== index);
+      setJobs(updatedJobs);
+      setFilteredJobs(updatedJobs);
+      localStorage.setItem("jobs", JSON.stringify(updatedJobs));
+    }
   };
-
-  // Filter jobs by Job ID (case-insensitive, partial match)
-  const filteredJobs = jobs.filter((job: { id: string; }) =>
-    job.id.toLowerCase().includes(search.trim().toLowerCase())
-  );
 
   return (
     <>
@@ -50,7 +87,7 @@ export default function JobModification() {
               onClick={() => router.push("/job-creation")}
               style={{ cursor: "pointer" }}
             >
-              <span className={styles.triangle} />▶ Job creation
+              <span className={styles.triangle} />▶ Job Creation
             </div>
             <div className={`${styles.menuItem} ${styles.menuItemActive}`}>
               <span className={styles.triangle} />▶ Job Modification
@@ -72,7 +109,6 @@ export default function JobModification() {
           </div>
         </aside>
 
-        {/* Main Content */}
         <main className={styles.content}>
           {/* Search Bar */}
           <div className={styles.jobModSearchRow}>
@@ -81,21 +117,18 @@ export default function JobModification() {
               type="text"
               placeholder="Search by Job ID"
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={(e) => setSearch(e.target.value)}
             />
-            <button className={styles.jobModSearchBtn}>
-              <img src="/search.png" alt="Search" />
-            </button>
           </div>
 
-          {/* Table */}
+          {/* Jobs Table */}
           <div className={styles.jobModTableWrapper}>
             <table className={styles.jobModTable}>
               <thead>
                 <tr>
                   <th>Job ID</th>
                   <th>Job Field</th>
-                  <th>Created Date</th>
+                  <th>Due Date</th>
                   <th>Status</th>
                   <th>Modification</th>
                 </tr>
@@ -106,7 +139,7 @@ export default function JobModification() {
                     <td colSpan={5}>No jobs found.</td>
                   </tr>
                 ) : (
-                  filteredJobs.map((job: { id: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; field: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; date: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; status: string | number | bigint | boolean | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | Promise<string | number | bigint | boolean | React.ReactPortal | React.ReactElement<unknown, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | null | undefined> | null | undefined; }, idx: React.Key | null | undefined) => (
+                  filteredJobs.map((job, idx) => (
                     <tr key={idx}>
                       <td>{job.id}</td>
                       <td>{job.field}</td>
@@ -115,14 +148,26 @@ export default function JobModification() {
                         {editIndex === jobs.indexOf(job) ? (
                           <select
                             value={job.status ?? ""}
-                            onChange={e => handleStatusChange(jobs.indexOf(job), e.target.value)}
-                            style={{ fontSize: "15px", borderRadius: "8px", padding: "4px 8px" }}
+                            onChange={(e) =>
+                              handleStatusChange(jobs.indexOf(job), e.target.value)
+                            }
+                            style={{
+                              fontSize: "15px",
+                              borderRadius: "8px",
+                              padding: "4px 8px",
+                            }}
                           >
                             <option value="Accepted">Accepted</option>
                             <option value="Rejected">Rejected</option>
                           </select>
                         ) : (
-                          <span className={job.status === "Accepted" ? styles.accepted : styles.jobModRejected}>
+                          <span
+                            className={
+                              job.status === "Accepted"
+                                ? styles.accepted
+                                : styles.jobModRejected
+                            }
+                          >
                             {job.status}
                           </span>
                         )}
