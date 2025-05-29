@@ -53,7 +53,7 @@ export default function Jobs() {
                         <span>|</span>
                         <a href="/jobs" className={styles.active}>Jobs</a>
                         <span>|</span>
-                        <a href="/vacancies">jobs for you</a>
+                        <a href="/vacancies">Jobs for you</a>
                         
                         <span>|</span>
                         <a href="/">Home</a>

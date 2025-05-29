@@ -1,0 +1,135 @@
+/* Modal Styles */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContainer {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 500px;
+  max-width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modalTitle {
+  margin-top: 0;
+  color: #0055A2;
+}
+
+.modalSection {
+  margin-bottom: 20px;
+}
+
+.modalGrid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  row-gap: 10px;
+}
+
+.sectionTitle {
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 5px;
+  margin-top: 20px;
+  color: #0055A2;
+}
+
+.preWrap {
+  white-space: pre-wrap;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Status Badges */
+.statusBadge {
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+  font-size: 14px;
+  color: white;
+}
+
+.statusPending {
+  background: #ffc107;
+}
+
+.statusShortlisted {
+  background: #28a745;
+}
+
+.statusRejected {
+  background: #dc3545;
+}
+
+/* Button Styles */
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 10px;
+  color: white;
+}
+
+.btnPrimary {
+  background-color: #0055A2;
+}
+
+.btnSuccess {
+  background-color: #28a745;
+  display: flex;
+  align-items: center;
+}
+
+.btnDanger {
+  background-color: #dc3545;
+}
+
+.btnSecondary {
+  background-color: #555;
+}
+
+.iconMargin {
+  margin-right: 5px;
+}
+
+/* Table Action Buttons */
+.tableBtn {
+  border: none;
+  border-radius: 4px;
+  padding: 5px 10px;
+  cursor: pointer;
+  color: white;
+  margin-right: 5px;
+}
+
+.tableDeleteBtn {
+  background: #dc3545;
+  margin-left: 5px;
+}
+
+.tableViewBtn {
+  background: #0055A2;
+}
+
+.tableEditBtn {
+  background: #555;
+}
+
+.tableDownloadBtn {
+  background: #28a745;
+  margin-left: 5px;
+}

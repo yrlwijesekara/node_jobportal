@@ -23,7 +23,7 @@ export default function JobStatus() {
   useEffect(() => {
     const savedApplications = JSON.parse(localStorage.getItem("applications") || "[]");
     // Only show applications NOT hidden from user
-    const visibleApplications = savedApplications.filter(app => !app.hiddenFromUser);
+    const visibleApplications = savedApplications.filter((app: { hiddenFromUser: any; }) => !app.hiddenFromUser);
     setApplications(visibleApplications);
   }, []);
 
@@ -35,7 +35,7 @@ export default function JobStatus() {
         const allApplications = JSON.parse(localStorage.getItem("applications") || "[]");
         
         // Mark the specific application as hidden for user
-        const updatedApplications = allApplications.map(savedApp => {
+        const updatedApplications = allApplications.map((savedApp: { nameWithInitials: string; jobTitle: string; submissionDate: string; }) => {
           if (
             savedApp.nameWithInitials === app.nameWithInitials && 
             savedApp.jobTitle === app.jobTitle && 
@@ -97,7 +97,7 @@ export default function JobStatus() {
             <span>|</span>
             <a href="/jobs">Jobs</a>
             <span>|</span>
-            <a href="/vacancies">jobs for you</a>
+            <a href="/vacancies">Jobs for you</a>
             <span>|</span>
             <a href="/">Home</a>
             <span>|</span>

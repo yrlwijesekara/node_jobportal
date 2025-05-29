@@ -1,9 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, ReactNode } from "react";
 import { useRouter } from "next/router";
 import styles from "../styles/JobCreation.module.css";
 import homeStyles from "../styles/Home.module.css";
+import viewerStyles from "../styles/ApplicationViewer.module.css";
 
 type Application = {
+  interviewNotes: React.JSX.Element;
+  interviewLocation: ReactNode;
+  interviewTime: ReactNode;
+  interviewDate: React.JSX.Element;
   jobTitle: string;
   nameWithInitials: string;
   fullName: string;
@@ -29,7 +34,7 @@ export default function ReceivedCVs() {
   useEffect(() => {
     const savedApplications = JSON.parse(localStorage.getItem("applications") || "[]");
     // Only show applications that haven't been hidden from admin
-    const visibleApplications = savedApplications.filter(app => !app.hiddenFromAdmin);
+    const visibleApplications = savedApplications.filter((app: { hiddenFromAdmin: any; }) => !app.hiddenFromAdmin);
     setApplications(visibleApplications);
     setFilteredApplications(visibleApplications);
   }, []);
@@ -86,7 +91,7 @@ export default function ReceivedCVs() {
         const allApplications = JSON.parse(localStorage.getItem("applications") || "[]");
         
         // Find the specific application to mark as deleted for admin
-        const updatedApplications = allApplications.map(savedApp => {
+        const updatedApplications = allApplications.map((savedApp: { nameWithInitials: string; jobTitle: string; submissionDate: string; }) => {
           if (
             savedApp.nameWithInitials === app.nameWithInitials && 
             savedApp.jobTitle === app.jobTitle && 
@@ -102,9 +107,9 @@ export default function ReceivedCVs() {
         localStorage.setItem("applications", JSON.stringify(updatedApplications));
         
         // Update local state - filter out admin-deleted applications
-        const visibleApplications = updatedApplications.filter(app => !app.hiddenFromAdmin);
+        const visibleApplications = updatedApplications.filter((app: { hiddenFromAdmin: any; }) => !app.hiddenFromAdmin);
         setApplications(visibleApplications);
-        setFilteredApplications(visibleApplications.filter(a => 
+        setFilteredApplications(visibleApplications.filter((a: { nameWithInitials: string; jobTitle: string; }) => 
           !search || 
           a.nameWithInitials.toLowerCase().includes(search.toLowerCase()) ||
           a.jobTitle.toLowerCase().includes(search.toLowerCase())
@@ -225,61 +230,26 @@ export default function ReceivedCVs() {
                       </td>
                       <td>
                         <button
-                          className={styles.viewBtn}
+                          className={`${viewerStyles.tableBtn} ${viewerStyles.tableViewBtn}`}
                           onClick={() => handleViewDetails(app)}
-                          style={{ 
-                            background: "#0055A2",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            padding: "5px 10px",
-                            marginRight: "5px",
-                            cursor: "pointer"
-                          }}
                         >
                           View
                         </button>
                         <button
-                          className={styles.editBtn}
+                          className={`${viewerStyles.tableBtn} ${viewerStyles.tableEditBtn}`}
                           onClick={() => setEditIndex(applications.indexOf(app))}
-                          style={{ 
-                            background: "#555",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            padding: "5px 10px",
-                            cursor: "pointer" 
-                          }}
                         >
                           Edit
                         </button>
                         <button
-                          className={styles.downloadBtn}
+                          className={`${viewerStyles.tableBtn} ${viewerStyles.tableDownloadBtn}`}
                           onClick={() => handleDownloadCV(app)}
-                          style={{ 
-                            background: "#28a745",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            padding: "5px 10px",
-                            marginLeft: "5px",
-                            cursor: "pointer"
-                          }}
                         >
                           📥 CV
                         </button>
                         <button
-                          className={styles.deleteBtn}
-                          onClick={() => handleDeleteApplication(app, idx)} // Pass both app object and index
-                          style={{ 
-                            background: "#dc3545",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            padding: "5px 10px",
-                            marginLeft: "5px",
-                            cursor: "pointer"
-                          }}
+                          className={`${viewerStyles.tableBtn} ${viewerStyles.tableDeleteBtn}`}
+                          onClick={() => handleDeleteApplication(app, idx)}
                         >
                           🗑️ Delete
                         </button>
@@ -293,31 +263,14 @@ export default function ReceivedCVs() {
 
           {/* View Application Details Modal */}
           {showViewModal && viewingApp && (
-            <div style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(0,0,0,0.5)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 1000
-            }}>
-              <div style={{
-                backgroundColor: "white",
-                padding: "20px",
-                borderRadius: "8px",
-                width: "500px",
-                maxWidth: "90%"
-              }}>
-                <h3 style={{ marginTop: 0, color: "#0055A2" }}>
+            <div className={viewerStyles.modalOverlay}>
+              <div className={viewerStyles.modalContainer}>
+                <h3 className={viewerStyles.modalTitle}>
                   Application Details
                 </h3>
                 
-                <div style={{ marginBottom: "20px" }}>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", rowGap: "10px" }}>
+                <div className={viewerStyles.modalSection}>
+                  <div className={viewerStyles.modalGrid}>
                     <strong>Job Title:</strong>
                     <span>{viewingApp.jobTitle}</span>
                     
@@ -343,50 +296,62 @@ export default function ReceivedCVs() {
                     <span>{new Date(viewingApp.submissionDate).toLocaleDateString()}</span>
                     
                     <strong>Status:</strong>
-                    <span style={{
-                      background: viewingApp.status === "Shortlisted" ? "#28a745" : 
-                                 viewingApp.status === "Rejected" ? "#dc3545" : "#ffc107",
-                      color: "white",
-                      padding: "2px 6px",
-                      borderRadius: "4px",
-                      display: "inline-block",
-                      fontSize: "14px"
-                    }}>
+                    <span className={`${viewerStyles.statusBadge} ${
+                      viewingApp.status === "Shortlisted" ? viewerStyles.statusShortlisted : 
+                      viewingApp.status === "Rejected" ? viewerStyles.statusRejected : 
+                      viewerStyles.statusPending
+                    }`}>
                       {viewingApp.status}
                     </span>
                   </div>
+                  
+                  {/* Show interview details if they exist */}
+                  {viewingApp.interviewDate && (
+                    <>
+                      <h4 className={viewerStyles.sectionTitle}>
+                        Interview Details
+                      </h4>
+                      <div className={viewerStyles.modalGrid}>
+                        <strong>Date:</strong>
+                        <span>{viewingApp.interviewDate}</span>
+                        
+                        <strong>Time:</strong>
+                        <span>{viewingApp.interviewTime}</span>
+                        
+                        <strong>Location:</strong>
+                        <span>{viewingApp.interviewLocation}</span>
+                        
+                        {viewingApp.interviewNotes && (
+                          <>
+                            <strong>Notes:</strong>
+                            <span className={viewerStyles.preWrap}>{viewingApp.interviewNotes}</span>
+                          </>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
                 
-                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <div className={viewerStyles.modalActions}>
                   {viewingApp.cvFileName && (
                     <button 
                       onClick={() => handleDownloadCV(viewingApp)}
-                      style={{
-                        padding: "8px 16px",
-                        marginRight: "10px",
-                        backgroundColor: "#28a745",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center"
-                      }}
+                      className={`${viewerStyles.btn} ${viewerStyles.btnSuccess}`}
                     >
-                      <span style={{ marginRight: "5px" }}>📥</span> Download CV
+                      <span className={viewerStyles.iconMargin}>📥</span> Download CV
                     </button>
                   )}
                   
                   <button 
+                    onClick={() => setEditIndex(applications.indexOf(viewingApp))}
+                    className={`${viewerStyles.btn} ${viewerStyles.btnSecondary}`}
+                  >
+                    Edit Status
+                  </button>
+                  
+                  <button 
                     onClick={() => setShowViewModal(false)}
-                    style={{
-                      padding: "8px 16px",
-                      backgroundColor: "#0055A2",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "4px",
-                      cursor: "pointer"
-                    }}
+                    className={`${viewerStyles.btn} ${viewerStyles.btnPrimary}`}
                   >
                     Close
                   </button>
