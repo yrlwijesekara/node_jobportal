@@ -32,12 +32,16 @@ export default function AcceptedCVs() {
     location: "",
     notes: ""
   });
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewingApp, setViewingApp] = useState<Application | null>(null);
 
   // Load shortlisted applications from localStorage on component mount
   useEffect(() => {
     const allApplications = JSON.parse(localStorage.getItem("applications") || "[]");
-    // Filter only applications with "Shortlisted" status
-    const shortlisted = allApplications.filter(app => app.status === "Shortlisted");
+    // Filter only applications with "Shortlisted" status AND not hidden from admin
+    const shortlisted = allApplications.filter(app => 
+      app.status === "Shortlisted" && !app.hiddenFromAdmin
+    );
     setShortlistedApplications(shortlisted);
     setFilteredApplications(shortlisted);
   }, []);
@@ -129,28 +133,8 @@ export default function AcceptedCVs() {
 
   // View detailed CV info
   const handleViewDetails = (app: Application) => {
-    let details = `
-      Job: ${app.jobTitle}
-      Name: ${app.fullName}
-      Email: ${app.email}
-      Contact: ${app.contactNumber}
-      Field: ${app.field}
-      CV: ${app.cvFileName || "No file"}
-      Submitted: ${new Date(app.submissionDate).toLocaleDateString()}
-      Status: ${app.status}
-    `;
-    
-    if (app.interviewDate) {
-      details += `
-      \n--- Interview Details ---
-      Date: ${app.interviewDate}
-      Time: ${app.interviewTime}
-      Location: ${app.interviewLocation}
-      Notes: ${app.interviewNotes || "None"}
-      `;
-    }
-    
-    alert(details);
+    setViewingApp(app);
+    setShowViewModal(true);
   };
 
   return (
@@ -423,6 +407,127 @@ export default function AcceptedCVs() {
                     }}
                   >
                     Save
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* View Application Details Modal */}
+          {showViewModal && viewingApp && (
+            <div style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0,0,0,0.5)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 1000
+            }}>
+              <div style={{
+                backgroundColor: "white",
+                padding: "20px",
+                borderRadius: "8px",
+                width: "500px",
+                maxWidth: "90%"
+              }}>
+                <h3 style={{ marginTop: 0, color: "#0055A2" }}>
+                  Application Details
+                </h3>
+                
+                <div style={{ marginBottom: "20px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", rowGap: "10px" }}>
+                    <strong>Job Title:</strong>
+                    <span>{viewingApp.jobTitle}</span>
+                    
+                    <strong>Applicant Name:</strong>
+                    <span>{viewingApp.fullName}</span>
+                    
+                    <strong>Email:</strong>
+                    <span>{viewingApp.email}</span>
+                    
+                    <strong>Contact Number:</strong>
+                    <span>{viewingApp.contactNumber}</span>
+                    
+                    <strong>Field:</strong>
+                    <span>{viewingApp.field}</span>
+                    
+                    <strong>CV:</strong>
+                    <span>{viewingApp.cvFileName || "No file"}</span>
+                    
+                    <strong>Submitted On:</strong>
+                    <span>{new Date(viewingApp.submissionDate).toLocaleDateString()}</span>
+                    
+                    <strong>Status:</strong>
+                    <span style={{
+                      background: viewingApp.status === "Shortlisted" ? "#28a745" : 
+                                 viewingApp.status === "Rejected" ? "#dc3545" : "#ffc107",
+                      color: "white",
+                      padding: "2px 6px",
+                      borderRadius: "4px",
+                      display: "inline-block",
+                      fontSize: "14px"
+                    }}>
+                      {viewingApp.status}
+                    </span>
+                  </div>
+                  
+                  {viewingApp.interviewDate && (
+                    <>
+                      <h4 style={{ borderBottom: "1px solid #ddd", paddingBottom: "5px", marginTop: "20px" }}>
+                        Interview Details
+                      </h4>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", rowGap: "10px" }}>
+                        <strong>Date:</strong>
+                        <span>{viewingApp.interviewDate}</span>
+                        
+                        <strong>Time:</strong>
+                        <span>{viewingApp.interviewTime}</span>
+                        
+                        <strong>Location:</strong>
+                        <span>{viewingApp.interviewLocation}</span>
+                        
+                        <strong>Notes:</strong>
+                        <span>{viewingApp.interviewNotes || "None"}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+                
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  {viewingApp.cvFileName && (
+                    <button 
+                      onClick={() => alert(`In a production environment, this would download the file: ${viewingApp.cvFileName}`)}
+                      style={{
+                        padding: "8px 16px",
+                        marginRight: "10px",
+                        backgroundColor: "#28a745",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center"
+                      }}
+                    >
+                      <span style={{ marginRight: "5px" }}>📥</span> Download CV
+                    </button>
+                  )}
+                  <button 
+                    onClick={() => setShowViewModal(false)}
+                    style={{
+                      padding: "8px 16px",
+                      backgroundColor: "#0055A2",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: "pointer"
+                    }}
+                  >
+                    Close
                   </button>
                 </div>
               </div>

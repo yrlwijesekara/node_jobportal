@@ -18,7 +18,7 @@ export default function Jobs() {
         console.log("All jobs from localStorage:", savedJobs);
 
         // Filter for accepted jobs only - case sensitive!
-        const accepted = savedJobs.filter(job => job.status === "Accepted");
+        const accepted = savedJobs.filter((job: { status: string; }) => job.status === "Accepted");
         console.log("Filtered accepted jobs:", accepted);
 
         setAllJobs(accepted); // Store all accepted jobs
@@ -26,7 +26,7 @@ export default function Jobs() {
     }, []);
 
     // Handle job type filter change
-    const handleFilterChange = (e) => {
+    const handleFilterChange = (e: { target: { value: any; }; }) => {
         const type = e.target.value;
         setSelectedType(type);
 

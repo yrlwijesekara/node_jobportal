@@ -13,6 +13,7 @@ type Application = {
   cvFileName: string | null;
   submissionDate: string;
   status: string;
+  hiddenFromAdmin?: boolean; // Optional field to track "deleted for admin" status
 };
 
 export default function ReceivedCVs() {
@@ -21,12 +22,16 @@ export default function ReceivedCVs() {
   const [filteredApplications, setFilteredApplications] = useState<Application[]>([]);
   const [search, setSearch] = useState("");
   const [editIndex, setEditIndex] = useState(-1);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewingApp, setViewingApp] = useState<Application | null>(null);
 
   // Load applications from localStorage on component mount
   useEffect(() => {
     const savedApplications = JSON.parse(localStorage.getItem("applications") || "[]");
-    setApplications(savedApplications);
-    setFilteredApplications(savedApplications);
+    // Only show applications that haven't been hidden from admin
+    const visibleApplications = savedApplications.filter(app => !app.hiddenFromAdmin);
+    setApplications(visibleApplications);
+    setFilteredApplications(visibleApplications);
   }, []);
 
   // Filter applications based on search input
@@ -57,15 +62,8 @@ export default function ReceivedCVs() {
 
   // View CV details
   const handleViewDetails = (app: Application) => {
-    alert(`
-      Job: ${app.jobTitle}
-      Name: ${app.fullName}
-      Email: ${app.email}
-      Contact: ${app.contactNumber}
-      Field: ${app.field}
-      CV: ${app.cvFileName || "No file"}
-      Submitted: ${new Date(app.submissionDate).toLocaleDateString()}
-    `);
+    setViewingApp(app);
+    setShowViewModal(true);
   };
 
   // Download CV file (mock implementation)
@@ -80,21 +78,44 @@ export default function ReceivedCVs() {
   };
 
   // Handle application deletion
-  const handleDeleteApplication = (index: number) => {
+  const handleDeleteApplication = (app: Application, idx: number) => {
     // Confirm before deleting
-    if (window.confirm("Are you sure you want to delete this application? This action cannot be undone.")) {
-      // Create a new array without the deleted application
-      const updatedApplications = applications.filter((_, idx) => idx !== index);
-      
-      // Update state
-      setApplications(updatedApplications);
-      setFilteredApplications(updatedApplications);
-      
-      // Update localStorage
-      localStorage.setItem("applications", JSON.stringify(updatedApplications));
-      
-      // Show confirmation
-      alert("Application has been deleted successfully");
+    if (window.confirm("Are you sure you want to delete this application from admin view? Users will still see their applications.")) {
+      try {
+        // Get all applications directly from localStorage
+        const allApplications = JSON.parse(localStorage.getItem("applications") || "[]");
+        
+        // Find the specific application to mark as deleted for admin
+        const updatedApplications = allApplications.map(savedApp => {
+          if (
+            savedApp.nameWithInitials === app.nameWithInitials && 
+            savedApp.jobTitle === app.jobTitle && 
+            savedApp.submissionDate === app.submissionDate
+          ) {
+            // Mark as deleted for admin view only
+            return { ...savedApp, hiddenFromAdmin: true };
+          }
+          return savedApp;
+        });
+        
+        // Update localStorage
+        localStorage.setItem("applications", JSON.stringify(updatedApplications));
+        
+        // Update local state - filter out admin-deleted applications
+        const visibleApplications = updatedApplications.filter(app => !app.hiddenFromAdmin);
+        setApplications(visibleApplications);
+        setFilteredApplications(visibleApplications.filter(a => 
+          !search || 
+          a.nameWithInitials.toLowerCase().includes(search.toLowerCase()) ||
+          a.jobTitle.toLowerCase().includes(search.toLowerCase())
+        ));
+        
+        // Show confirmation
+        alert("Application has been removed from admin view");
+      } catch (error) {
+        console.error("Error hiding application:", error);
+        alert("An error occurred while removing the application");
+      }
     }
   };
 
@@ -249,7 +270,7 @@ export default function ReceivedCVs() {
                         </button>
                         <button
                           className={styles.deleteBtn}
-                          onClick={() => handleDeleteApplication(idx)}
+                          onClick={() => handleDeleteApplication(app, idx)} // Pass both app object and index
                           style={{ 
                             background: "#dc3545",
                             color: "white",
@@ -269,6 +290,110 @@ export default function ReceivedCVs() {
               </tbody>
             </table>
           </div>
+
+          {/* View Application Details Modal */}
+          {showViewModal && viewingApp && (
+            <div style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0,0,0,0.5)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 1000
+            }}>
+              <div style={{
+                backgroundColor: "white",
+                padding: "20px",
+                borderRadius: "8px",
+                width: "500px",
+                maxWidth: "90%"
+              }}>
+                <h3 style={{ marginTop: 0, color: "#0055A2" }}>
+                  Application Details
+                </h3>
+                
+                <div style={{ marginBottom: "20px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", rowGap: "10px" }}>
+                    <strong>Job Title:</strong>
+                    <span>{viewingApp.jobTitle}</span>
+                    
+                    <strong>Name with Initials:</strong>
+                    <span>{viewingApp.nameWithInitials}</span>
+                    
+                    <strong>Full Name:</strong>
+                    <span>{viewingApp.fullName}</span>
+                    
+                    <strong>Email:</strong>
+                    <span>{viewingApp.email}</span>
+                    
+                    <strong>Contact Number:</strong>
+                    <span>{viewingApp.contactNumber}</span>
+                    
+                    <strong>Field:</strong>
+                    <span>{viewingApp.field}</span>
+                    
+                    <strong>CV:</strong>
+                    <span>{viewingApp.cvFileName || "No file"}</span>
+                    
+                    <strong>Submitted On:</strong>
+                    <span>{new Date(viewingApp.submissionDate).toLocaleDateString()}</span>
+                    
+                    <strong>Status:</strong>
+                    <span style={{
+                      background: viewingApp.status === "Shortlisted" ? "#28a745" : 
+                                 viewingApp.status === "Rejected" ? "#dc3545" : "#ffc107",
+                      color: "white",
+                      padding: "2px 6px",
+                      borderRadius: "4px",
+                      display: "inline-block",
+                      fontSize: "14px"
+                    }}>
+                      {viewingApp.status}
+                    </span>
+                  </div>
+                </div>
+                
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  {viewingApp.cvFileName && (
+                    <button 
+                      onClick={() => handleDownloadCV(viewingApp)}
+                      style={{
+                        padding: "8px 16px",
+                        marginRight: "10px",
+                        backgroundColor: "#28a745",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center"
+                      }}
+                    >
+                      <span style={{ marginRight: "5px" }}>📥</span> Download CV
+                    </button>
+                  )}
+                  
+                  <button 
+                    onClick={() => setShowViewModal(false)}
+                    style={{
+                      padding: "8px 16px",
+                      backgroundColor: "#0055A2",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: "pointer"
+                    }}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </>

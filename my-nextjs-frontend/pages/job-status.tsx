@@ -13,18 +13,58 @@ type Application = {
   interviewTime?: string;
   interviewLocation?: string;
   interviewNotes?: string;
+  hiddenFromUser?: boolean; // Add this flag to track user-side deletions
 };
 
 export default function JobStatus() {
   const [applications, setApplications] = useState<Application[]>([]);
   
-  // Load applications from localStorage
+  // Load applications from localStorage - filtered to exclude user-hidden ones
   useEffect(() => {
-    // In a real app, you'd filter by the logged-in user
-    // For now, we'll show all applications
     const savedApplications = JSON.parse(localStorage.getItem("applications") || "[]");
-    setApplications(savedApplications);
+    // Only show applications NOT hidden from user
+    const visibleApplications = savedApplications.filter(app => !app.hiddenFromUser);
+    setApplications(visibleApplications);
   }, []);
+
+  // Function to handle user deletion (hide from user view only)
+  const handleDeleteApplication = (app: Application) => {
+    if (window.confirm("Are you sure you want to delete this application from your view?")) {
+      try {
+        // Get all applications from localStorage
+        const allApplications = JSON.parse(localStorage.getItem("applications") || "[]");
+        
+        // Mark the specific application as hidden for user
+        const updatedApplications = allApplications.map(savedApp => {
+          if (
+            savedApp.nameWithInitials === app.nameWithInitials && 
+            savedApp.jobTitle === app.jobTitle && 
+            savedApp.submissionDate === app.submissionDate
+          ) {
+            // Mark as hidden for user view only
+            return { ...savedApp, hiddenFromUser: true };
+          }
+          return savedApp;
+        });
+        
+        // Update localStorage
+        localStorage.setItem("applications", JSON.stringify(updatedApplications));
+        
+        // Update state - remove the deleted application from view
+        setApplications(applications.filter(a => 
+          !(a.nameWithInitials === app.nameWithInitials && 
+            a.jobTitle === app.jobTitle && 
+            a.submissionDate === app.submissionDate)
+        ));
+        
+        // Show confirmation
+        alert("Application has been removed from your view");
+      } catch (error) {
+        console.error("Error hiding application:", error);
+        alert("An error occurred while removing the application");
+      }
+    }
+  };
 
   // Function to determine status badge color
   const getStatusColor = (status: string) => {
@@ -96,6 +136,7 @@ export default function JobStatus() {
                   <th>Applied Date</th>
                   <th>Status</th>
                   <th>Interview Details</th>
+                  <th>Actions</th> {/* Add this column */}
                 </tr>
               </thead>
               <tbody>
@@ -152,6 +193,59 @@ export default function JobStatus() {
                         <span style={{ color: '#666', fontStyle: 'italic' }}>
                           Under review
                         </span>
+                      )}
+                    </td>
+                    <td>
+                      {(app.status === "Shortlisted" && app.interviewDate) || app.status === "Rejected" ? (
+                        // Allow deletion if interview is scheduled OR application is rejected
+                        <button
+                          onClick={() => handleDeleteApplication(app)}
+                          style={{ 
+                            background: "#dc3545",
+                            color: "white",
+                            border: "none",
+                            borderRadius: "4px",
+                            padding: "5px 10px",
+                            cursor: "pointer",
+                            fontSize: "14px"
+                          }}
+                        >
+                          Delete
+                        </button>
+                      ) : (
+                        // Disabled button with tooltip for pending or shortlisted without interview
+                        <div style={{ position: "relative" }}>
+                          <button
+                            disabled
+                            style={{ 
+                              background: "#6c757d",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "4px",
+                              padding: "5px 10px",
+                              cursor: "not-allowed",
+                              fontSize: "14px",
+                              opacity: "0.65"
+                            }}
+                            title={
+                              app.status === "Shortlisted" 
+                                ? "Cannot delete until interview is scheduled" 
+                                : "Cannot delete until application is processed"
+                            }
+                          >
+                            Delete
+                          </button>
+                          <span style={{
+                            position: "absolute",
+                            bottom: "-20px",
+                            left: "0",
+                            fontSize: "11px",
+                            color: "#666",
+                            whiteSpace: "nowrap"
+                          }}>
+                            {app.status === "Pending" ? "Application under review" : "Awaiting interview details"}
+                          </span>
+                        </div>
                       )}
                     </td>
                   </tr>
