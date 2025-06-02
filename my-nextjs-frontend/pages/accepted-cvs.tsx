@@ -39,7 +39,7 @@ export default function AcceptedCVs() {
   useEffect(() => {
     const allApplications = JSON.parse(localStorage.getItem("applications") || "[]");
     // Filter only applications with "Shortlisted" status AND not hidden from admin
-    const shortlisted = allApplications.filter(app => 
+    const shortlisted = allApplications.filter((app: { status: string; hiddenFromAdmin: any; }) => 
       app.status === "Shortlisted" && !app.hiddenFromAdmin
     );
     setShortlistedApplications(shortlisted);
