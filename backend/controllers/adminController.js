@@ -1,7 +1,4 @@
-const express = require('express');
-const router = express.Router();
-const adminController = require('../controllers/adminController');
-const { protect, admin } = require('../middleware/auth');
+const User = require('../models/User');
 
 // Promote a user to admin (requires admin privileges)
 exports.promoteToAdmin = async (req, res) => {
@@ -38,7 +35,3 @@ exports.promoteToAdmin = async (req, res) => {
     });
   }
 };
-
-router.put('/promote/:userId', protect, admin, adminController.promoteToAdmin);
-
-module.exports = router;

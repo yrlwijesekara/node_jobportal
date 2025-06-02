@@ -7,6 +7,8 @@ const connectDB = require('./config/db');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const jobRoutes = require('./routes/jobRoutes');
 
 // Load environment variables
 dotenv.config();
@@ -28,6 +30,8 @@ app.use('/uploads', express.static(uploadDir));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/jobs', jobRoutes);
 
 // Test route
 app.get('/', (req, res) => {

@@ -9,6 +9,15 @@ exports.protect = async (req, res, next) => {
     // Get token from header
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
       token = req.headers.authorization.split(' ')[1];
+      console.log("Raw token received:", token);
+      
+      // Basic validation - JWT tokens always have 2 dots (header.payload.signature)
+      if (!token || token === 'undefined' || token === 'null' || !token.includes('.')) {
+        return res.status(401).json({ 
+          success: false,
+          error: 'Invalid token format' 
+        });
+      }
     }
     
     // Check if token exists
@@ -35,6 +44,7 @@ exports.protect = async (req, res, next) => {
       
       next();
     } catch (error) {
+      console.log("Token verification error:", error);
       return res.status(401).json({ 
         success: false,
         error: 'Invalid token' 

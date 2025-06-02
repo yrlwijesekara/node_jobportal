@@ -2,31 +2,70 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import styles from "../styles/Home.module.css";
 
+// Type definition for job objects
+type Job = {
+  _id: string;
+  jobId: string;
+  type: string;
+  field: string;
+  dueDate: string;
+  position: string;
+  contactNumber?: string;
+  salary?: string;
+  background?: string;
+  location?: string;
+  email?: string;
+  workType?: string;
+  description?: string;
+  status: string;
+  createdAt: string;
+};
+
 export default function Jobs() {
     const router = useRouter();
-    const [acceptedJobs, setAcceptedJobs] = useState([]);
-    const [allJobs, setAllJobs] = useState([]); // Store all jobs
-    const [selectedType, setSelectedType] = useState(""); // For job type filter
+    const [acceptedJobs, setAcceptedJobs] = useState<Job[]>([]);
+    const [allJobs, setAllJobs] = useState<Job[]>([]); 
+    const [selectedType, setSelectedType] = useState(""); 
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState("");
 
     // Get unique job types from the jobs list
     const jobTypes = [...new Set(acceptedJobs.map(job => job.type))].filter(Boolean);
 
-    // Load jobs and debug the process
+    // Load jobs from the API
     useEffect(() => {
-        // Get all jobs from localStorage
-        const savedJobs = JSON.parse(localStorage.getItem("jobs") || "[]");
-        console.log("All jobs from localStorage:", savedJobs);
-
-        // Filter for accepted jobs only - case sensitive!
-        const accepted = savedJobs.filter((job: { status: string; }) => job.status === "Accepted");
-        console.log("Filtered accepted jobs:", accepted);
-
-        setAllJobs(accepted); // Store all accepted jobs
-        setAcceptedJobs(accepted); // Initially show all
+        const fetchJobs = async () => {
+            try {
+                setIsLoading(true);
+                // Fetch jobs from API
+                const response = await fetch('http://localhost:5000/api/jobs');
+                
+                if (!response.ok) {
+                    throw new Error("Failed to fetch jobs");
+                }
+                
+                const data = await response.json();
+                console.log("Jobs from API:", data.jobs);
+                
+                // Filter for accepted jobs only
+                const accepted = data.jobs.filter((job: Job) => job.status === "Accepted");
+                console.log("Filtered accepted jobs:", accepted);
+                
+                setAllJobs(accepted);
+                setAcceptedJobs(accepted);
+            } catch (err) {
+                console.error("Error fetching jobs:", err);
+                setError("Failed to load jobs. Please try again later.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        
+        fetchJobs();
     }, []);
 
     // Handle job type filter change
-    const handleFilterChange = (e: { target: { value: any; }; }) => {
+    const handleFilterChange = (e: { target: { value: string; }; }) => {
         const type = e.target.value;
         setSelectedType(type);
 
@@ -49,12 +88,10 @@ export default function Jobs() {
                     <span className={styles.title}>Training Program</span>
                     <nav className={styles.nav}>
                         <a href="/job-status">Job status</a>
-                        
                         <span>|</span>
                         <a href="/jobs" className={styles.active}>Jobs</a>
                         <span>|</span>
                         <a href="/vacancies">Jobs for you</a>
-                        
                         <span>|</span>
                         <a href="/">Home</a>
                         <span>|</span>
@@ -112,43 +149,50 @@ export default function Jobs() {
             {/* Cards Section */}
             <section className={styles.cards} style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
-                gap: "50px",
+                gridTemplateColumns: "repeat(4, 1fr)", // Changed from repeat(3, 1fr)
+                gap: "30px", // Reduced gap to fit 4 cards
                 padding: "0 20px 40px",
-                justifyItems: "center",  // Centers items in each grid cell
-                
+                justifyItems: "center",
             }}>
                 <h1 style={{
                     textAlign: 'center',
                     margin: '30px 0',
                     color: '#0055A2',
-                    gridColumn: "1 / span 3",  // This makes the heading span all 3 columns
+                    gridColumn: "1 / span 4", // Changed from span 3 to span 4
                     fontSize: "32px",
                     fontWeight: "bold",
                     borderBottom: "2px solid #0055A2",
                     paddingBottom: "15px",
                     width: "80%",
-                    justifySelf: "center"  // Centers the element within its grid cell
+                    justifySelf: "center"
                 }}>
                     {selectedType ? `${selectedType} Positions` : "Available Job Positions"}
                 </h1>
 
-                {acceptedJobs.length === 0 ? (
+                {isLoading ? (
+                    <div style={{ textAlign: 'center', gridColumn: "1 / span 4" }}> {/* Changed from span 3 to span 4 */}
+                        <p>Loading jobs...</p>
+                    </div>
+                ) : error ? (
+                    <div style={{ textAlign: 'center', gridColumn: "1 / span 4", color: "red" }}> {/* Changed from span 3 to span 4 */}
+                        <p>{error}</p>
+                    </div>
+                ) : acceptedJobs.length === 0 ? (
                     <p style={{
                         textAlign: 'center',
                         padding: '20px',
-                        gridColumn: "1 / span 3"  // Make the message span all columns
+                        gridColumn: "1 / span 4" /* Changed from span 3 to span 4 */
                     }}>
                         {selectedType
                             ? `No ${selectedType} positions available at the moment.`
                             : "No job positions available at the moment. Please check back later."}
                     </p>
                 ) : (
-                    // Map directly in the grid, no need for additional container
+                    // Map jobs to cards
                     acceptedJobs.map((job, index) => (
-                        <div key={index} className={styles.card} style={{
+                        <div key={job._id} className={styles.card} style={{
                             overflow: "hidden",
-                            height: "100%",  // Makes all cards the same height
+                            height: "100%",
                             display: "flex",
                             flexDirection: "column"
                         }}>
@@ -159,7 +203,7 @@ export default function Jobs() {
                                 overflow: "hidden",
                                 wordWrap: "break-word",
                                 whiteSpace: "normal",
-                                flex: 1  // Makes body take available space
+                                flex: 1
                             }}>
                                 <p style={{
                                     overflow: "hidden",
@@ -174,10 +218,10 @@ export default function Jobs() {
                                     {job.workType && <li><strong>Work Type:</strong> {job.workType}</li>}
                                     {job.location && <li><strong>Location:</strong> {job.location}</li>}
                                     {job.salary && <li><strong>Salary:</strong> {job.salary}</li>}
-                                    {job.date && <li><strong>Deadline:</strong> {job.date}</li>}
+                                    {job.dueDate && <li><strong>Deadline:</strong> {job.dueDate}</li>}
                                 </ul>
                             </div>
-                            <button className={styles.applyBtn} onClick={() => router.push(`/apply?jobId=${job.id}`)}>
+                            <button className={styles.applyBtn} onClick={() => router.push(`/apply?jobId=${job._id}`)}>
                                 Apply Now
                             </button>
                         </div>

@@ -35,9 +35,13 @@ export default function Login() {
         return; // Stop execution here
       }
       
-      // Use the context login function instead of manually setting items
-      login(data.user, data.token);
+      // Debug - check what's in the response
+      console.log("Login response data:", data);
+      console.log("Token received:", data.token);
       
+      // Make sure we're storing the actual token string
+      localStorage.setItem('token', data.token);
+
       // Redirect based on role
       if (data.user.role === 'admin') {
         // Show admin dashboard or special admin navigation

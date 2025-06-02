@@ -1,7 +1,67 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import styles from '../styles/Home.module.css';
 
+// Job type definition
+type Job = {
+  _id: string;
+  jobId: string;
+  type: string;
+  field: string;
+  dueDate: string;
+  position: string;
+  contactNumber?: string;
+  salary?: string;
+  background?: string;
+  location?: string;
+  email?: string;
+  workType?: string;
+  description?: string;
+  status: string;
+  createdAt: string;
+};
+
 export default function Vacancies() {
+  const router = useRouter();
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  // Fetch jobs from API on component mount
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('http://localhost:5000/api/jobs');
+        
+        if (!response.ok) {
+          throw new Error("Failed to fetch jobs");
+        }
+        
+        const data = await response.json();
+        
+        // Filter for accepted jobs only
+        const acceptedJobs = data.jobs
+          .filter((job: Job) => job.status === "Accepted")
+          // Sort by creation date (newest first)
+          .sort((a: Job, b: Job) => 
+            new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime()
+          )
+          // Add this line to take only the newest 4 jobs
+          .slice(0, 4);
+          
+        setJobs(acceptedJobs);
+      } catch (err) {
+        console.error("Error fetching jobs:", err);
+        setError("Failed to load jobs. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchJobs();
+  }, []);
+
   return (
     <div className={styles.vacanciesBg}>
       <div className={styles.container}>
@@ -11,13 +71,12 @@ export default function Vacancies() {
           <span className={styles.title}>Training Program</span>
           <nav className={styles.nav}>
             <a href="/job-status">Job status</a>
-            
             <span>|</span>
-            <a href="/jobs" className={styles.active}>Jobs</a>
+            <a href="/jobs">Jobs</a>
             <span>|</span>
-            <a href="/vacancies">Jobs for you</a>
+            <a href="/vacancies" className={styles.active}>Jobs for you</a>
             <span>|</span>
-            <a href="/" >Home</a>
+            <a href="/">Home</a>
             <span>|</span>
             <a href="/login">Login</a>
           </nav>
@@ -28,90 +87,57 @@ export default function Vacancies() {
           Find Your Job that is prefer for you
         </h1>
 
-        {/* Cards Section */}
-        <section className={styles.cards}>
-          {/* Card 1 */}
-          <div className={styles.card}>
-            <div className={styles.cardHeader}>Trainee Network Engineers</div>
-            <div className={styles.cardBody}>
-              <p>
-                We are hiring new training network engineers for SLTMobitel, Only an associate degree, a bachelor’s degree in computer science, information technology, computer engineering, or a related field undergraduates (3rd year, 4th year), and fresh graduates are proffered.
-              </p>
-              <ul>
-                <li>No job experiences are needed.</li>
-                <li>Networking knowledge.</li>
-                <li>Operating systems knowledge.</li>
-                <li>Network devices and security knowledge.</li>
-                <li>Networking device configuration knowledge.</li>
-              </ul>
-            </div>
-            <button 
-              className={styles.applyBtn} 
-              onClick={() => window.location.href = `/apply?jobTitle=${encodeURIComponent('Trainee Network Engineers')}`}
-            >
-              Apply Now
-            </button>
-          </div>
-          {/* Card 2 */}
-          <div className={styles.card}>
-            <div className={styles.cardHeader}>ACCOUNTANT-FINANCIAL ACCOUNTING</div>
-            <div className={styles.cardBody}>
-              <p>
-                Sri Lanka Telecom is in search of high caliber, result-oriented and qualified individuals capable of playing a key role in the finance team...
-              </p>
-              <ul>
-                <li>Associate Membership of ICA/CIMA/ACCA</li>
-                <li>Preference will be given to the candidates who are prize winners.</li>
-                <li>Be a resilient leader with excellent interpersonal and communication skills.</li>
-              </ul>
-            </div>
-            <button 
-              className={styles.applyBtn} 
-              onClick={() => window.location.href = `/apply?jobTitle=${encodeURIComponent('ACCOUNTANT-FINANCIAL ACCOUNTING')}`}
-            >
-              Apply Now
-            </button>
-          </div>
-          {/* Card 3 */}
-          <div className={styles.card}>
-            <div className={styles.cardHeader}>ENGINEERS</div>
-            <div className={styles.cardBody}>
-              <p>
-                As an Engineer of the pioneering ICT solutions provider, you will be a distinguished member of our team...
-              </p>
-              <ul>
-                <li>Four-year Degree in BSc Engineering/ Bachelor of Technology...</li>
-                <li>Thorough knowledge and experience in the field of Data Centre Network Security...</li>
-              </ul>
-            </div>
-            <button 
-              className={styles.applyBtn} 
-              onClick={() => window.location.href = `/apply?jobTitle=${encodeURIComponent('ENGINEERS')}`}
-            >
-              Apply Now
-            </button>
-          </div>
-          {/* Card 4 */}
-          <div className={styles.card}>
-            <div className={styles.cardHeader}>TECHNICIANS</div>
-            <div className={styles.cardBody}>
-              <p>
-                Technicians are mainly responsible in install, maintain and repair electronic communications equipment...
-              </p>
-              <ul>
-                <li>06 passes at the G.C.E. (O/L) exam including Sinhala Tamil and English Language and Mathematics and 03 credit passes in one sitting AND
-</li>
-                <li>Should have obtained Skilled Competence Certificate -NAITA in the relevant field equivalent to NVQ Level 4 (Telecommunication / Electrical/Electronic/ ICT/Power / Air Conditioning etc). </li>
-              </ul>
-            </div>
-            <button 
-              className={styles.applyBtn} 
-              onClick={() => window.location.href = `/apply?jobTitle=${encodeURIComponent('TECHNICIANS')}`}
-            >
-              Apply Now
-            </button>
-          </div>
-        </section>
+        {/* Loading or Error State */}
+        {isLoading ? (
+          <div className={styles.loadingContainer}>Loading jobs...</div>
+        ) : error ? (
+          <div className={styles.errorContainer}>{error}</div>
+        ) : (
+          <>
+            {/* Cards Section */}
+            <section className={styles.cards}>
+              {jobs.length === 0 ? (
+                <p className={styles.noJobs}>No job positions available at the moment.</p>
+              ) : (
+                jobs.map(job => (
+                  <div key={job._id} className={styles.card}>
+                    <div className={styles.cardHeader}>
+                      {job.type || job.position || "Job Position"}
+                    </div>
+                    <div className={styles.cardBody}>
+                      <p>
+                        {job.description || "No description available for this position."}
+                      </p>
+                      <ul>
+                        {job.background && (
+                          <li>{job.background}</li>
+                        )}
+                        {job.field && (
+                          <li>Field: {job.field}</li>
+                        )}
+                        {job.workType && (
+                          <li>Work Type: {job.workType}</li>
+                        )}
+                        {job.location && (
+                          <li>Location: {job.location}</li>
+                        )}
+                        {job.dueDate && (
+                          <li>Application deadline: {job.dueDate}</li>
+                        )}
+                      </ul>
+                    </div>
+                    <button 
+                      className={styles.applyBtn} 
+                      onClick={() => router.push(`/apply?jobId=${job._id}`)}
+                    >
+                      Apply Now
+                    </button>
+                  </div>
+                ))
+              )}
+            </section>
+          </>
+        )}
 
         {/* Apply Job Status Button */}
         <div className={styles.statusBtnContainer}>

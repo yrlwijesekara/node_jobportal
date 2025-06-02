@@ -4,32 +4,66 @@ import styles from "../styles/JobCreation.module.css";
 import homeStyles from "../styles/Home.module.css";
 
 type Job = {
-  id: string;
+  _id: string;
+  jobId: string;
   field: string;
-  date: string;
-  status?: string;
+  dueDate: string;
+  status: string;
+  type: string;
+  position: string;
+  // Add other job fields as needed
 };
 
 export default function JobModification() {
   const router = useRouter();
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [selectedJobId, setSelectedJobId] = useState("");
   const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
   const [search, setSearch] = useState("");
   const [editIndex, setEditIndex] = useState(-1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // Load jobs from localStorage on component mount
+  // Fetch jobs from API on component mount
   useEffect(() => {
-    const savedJobs = JSON.parse(localStorage.getItem("jobs") || "[]");
-    setJobs(savedJobs);
-    setFilteredJobs(savedJobs);
-  }, []);
+    const fetchJobs = async () => {
+      try {
+        setIsLoading(true);
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          router.push("/login");
+          return;
+        }
+
+        const response = await fetch("http://localhost:5000/api/jobs", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch jobs");
+        }
+
+        const data = await response.json();
+        setJobs(data.jobs);
+        setFilteredJobs(data.jobs);
+        setIsLoading(false);
+      } catch (err) {
+        console.error("Error fetching jobs:", err);
+        setError("Failed to load jobs. Please try again later.");
+        setIsLoading(false);
+      }
+    };
+
+    fetchJobs();
+  }, [router]);
 
   // Filter jobs based on search input
   useEffect(() => {
     if (search) {
       const filtered = jobs.filter((job) =>
-        job.id.toLowerCase().includes(search.toLowerCase())
+        job.jobId.toLowerCase().includes(search.toLowerCase())
       );
       setFilteredJobs(filtered);
     } else {
@@ -38,30 +72,109 @@ export default function JobModification() {
   }, [search, jobs]);
 
   // Handle job status change
-  const handleStatusChange = (index: number, newStatus: string) => {
-    console.log("Changing job status:", index, "to", newStatus);
+  const handleStatusChange = async (job: Job, newStatus: string) => {
+    try {
+      const token = localStorage.getItem("token");
 
-    const updatedJobs = [...jobs];
-    updatedJobs[index].status = newStatus; // Make sure status is exactly "Accepted" or "Rejected"
+      if (!token) {
+        router.push("/login");
+        return;
+      }
 
-    console.log("Updated job:", updatedJobs[index]);
-    setJobs(updatedJobs);
+      const response = await fetch(
+        `http://localhost:5000/api/jobs/${job._id}/status`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status: newStatus }),
+        }
+      );
 
-    // Make sure localStorage is updated correctly
-    localStorage.setItem("jobs", JSON.stringify(updatedJobs));
-    setEditIndex(-1);
+      if (!response.ok) {
+        throw new Error("Failed to update job status");
+      }
 
-    // Show confirmation to user
-    alert(`Job status has been changed to ${newStatus}`);
+      // Update local state after successful API call
+      const updatedJobs = jobs.map((j) =>
+        j._id === job._id ? { ...j, status: newStatus } : j
+      );
+
+      setJobs(updatedJobs);
+      setFilteredJobs(
+        search
+          ? updatedJobs.filter((j) =>
+              j.jobId.toLowerCase().includes(search.toLowerCase())
+            )
+          : updatedJobs
+      );
+      setEditIndex(-1);
+
+      // Show confirmation to user
+      alert(`Job status has been changed to ${newStatus}`);
+    } catch (err) {
+      console.error("Error updating job status:", err);
+      alert("Failed to update job status. Please try again.");
+    }
   };
 
   // Handle job deletion
-  const handleDelete = (index: number) => {
+  const handleDelete = async (job: Job) => {
     if (confirm("Are you sure you want to delete this job?")) {
-      const updatedJobs = jobs.filter((_, i) => i !== index);
-      setJobs(updatedJobs);
-      setFilteredJobs(updatedJobs);
-      localStorage.setItem("jobs", JSON.stringify(updatedJobs));
+      try {
+        const token = localStorage.getItem("token");
+        
+        if (!token) {
+          alert("Authentication required. Please login again.");
+          router.push("/login");
+          return;
+        }
+        
+        const response = await fetch(`http://localhost:5000/api/jobs/${job._id}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
+        // Check content type before attempting to parse JSON
+        const contentType = response.headers.get('content-type');
+        
+        if (!response.ok) {
+          // Handle non-JSON error responses
+          if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('Server returned non-JSON response:', text);
+            alert("Error: Unable to delete job. Please try again later.");
+            return;
+          }
+          
+          // Parse JSON error
+          const errorData = await response.json();
+          alert(errorData.error || "Failed to delete job. Please try again.");
+          return;
+        }
+        
+        // Success case - update local state
+        const updatedJobs = jobs.filter((j) => j._id !== job._id);
+        setJobs(updatedJobs);
+        setFilteredJobs(
+          search
+            ? updatedJobs.filter((j) =>
+                j.jobId.toLowerCase().includes(search.toLowerCase())
+              )
+            : updatedJobs
+        );
+        
+        // Show success message
+        alert("Job deleted successfully");
+        
+      } catch (err) {
+        console.error("Error deleting job:", err);
+        alert("Network error while deleting job. Please check your connection and try again.");
+      }
     }
   };
 
@@ -121,79 +234,96 @@ export default function JobModification() {
             />
           </div>
 
-          {/* Jobs Table */}
-          <div className={styles.jobModTableWrapper}>
-            <table className={styles.jobModTable}>
-              <thead>
-                <tr>
-                  <th>Job ID</th>
-                  <th>Job Field</th>
-                  <th>Due Date</th>
-                  <th>Status</th>
-                  <th>Modification</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredJobs.length === 0 ? (
+          {/* Error Message */}
+          {error && (
+            <div className={styles.errorMessage}>
+              <p>{error}</p>
+            </div>
+          )}
+
+          {/* Loading Indicator */}
+          {isLoading ? (
+            <div className={styles.loadingContainer}>
+              <p>Loading jobs...</p>
+            </div>
+          ) : (
+            /* Jobs Table */
+            <div className={styles.jobModTableWrapper}>
+              <table className={styles.jobModTable}>
+                <thead>
                   <tr>
-                    <td colSpan={5}>No jobs found.</td>
+                    <th>Job ID</th>
+                    <th>Job Field</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th>Modification</th>
                   </tr>
-                ) : (
-                  filteredJobs.map((job, idx) => (
-                    <tr key={idx}>
-                      <td>{job.id}</td>
-                      <td>{job.field}</td>
-                      <td>{job.date}</td>
-                      <td>
-                        {editIndex === jobs.indexOf(job) ? (
-                          <select
-                            value={job.status ?? ""}
-                            onChange={(e) =>
-                              handleStatusChange(jobs.indexOf(job), e.target.value)
-                            }
-                            style={{
-                              fontSize: "15px",
-                              borderRadius: "8px",
-                              padding: "4px 8px",
-                            }}
-                          >
-                            <option value="Accepted">Accepted</option>
-                            <option value="Rejected">Rejected</option>
-                          </select>
-                        ) : (
-                          <span
-                            className={
-                              job.status === "Accepted"
-                                ? styles.accepted
-                                : styles.jobModRejected
-                            }
-                          >
-                            {job.status}
-                          </span>
-                        )}
-                      </td>
-                      <td>
-                        <img
-                          src="/edit.png"
-                          alt="Edit"
-                          className={styles.jobModIcon}
-                          style={{ cursor: "pointer" }}
-                          onClick={() => setEditIndex(jobs.indexOf(job))}
-                        />
-                        <img
-                          src="/delete.png"
-                          alt="Delete"
-                          className={styles.jobModIcon}
-                          style={{ cursor: "pointer" }}
-                          onClick={() => handleDelete(jobs.indexOf(job))}
-                        />
-                      </td>
+                </thead>
+                <tbody>
+                  {filteredJobs.length === 0 ? (
+                    <tr>
+                      <td colSpan={5}>No jobs found.</td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ) : (
+                    filteredJobs.map((job, idx) => (
+                      <tr key={job._id}>
+                        <td>{job.jobId}</td>
+                        <td>{job.field}</td>
+                        <td>{job.dueDate}</td>
+                        <td>
+                          {editIndex === idx ? (
+                            <select
+                              value={job.status}
+                              onChange={(e) =>
+                                handleStatusChange(job, e.target.value)
+                              }
+                              style={{
+                                fontSize: "15px",
+                                borderRadius: "8px",
+                                padding: "4px 8px",
+                              }}
+                            >
+                              <option value="Pending">Pending</option>
+                              <option value="Accepted">Accepted</option>
+                              <option value="Rejected">Rejected</option>
+                            </select>
+                          ) : (
+                            <span
+                              className={
+                                job.status === "Accepted"
+                                  ? styles.accepted
+                                  : job.status === "Rejected"
+                                  ? styles.jobModRejected
+                                  : styles.jobModPending
+                              }
+                            >
+                              {job.status}
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <img
+                            src="/edit.png"
+                            alt="Edit"
+                            className={styles.jobModIcon}
+                            style={{ cursor: "pointer" }}
+                            onClick={() => setEditIndex(idx)}
+                          />
+                          <img
+                            src="/delete.png"
+                            alt="Delete"
+                            className={styles.jobModIcon}
+                            style={{ cursor: "pointer" }}
+                            onClick={() => handleDelete(job)}
+                          />
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
         </main>
       </div>
     </>

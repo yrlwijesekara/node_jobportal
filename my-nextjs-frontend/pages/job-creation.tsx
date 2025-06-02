@@ -20,6 +20,10 @@ export default function JobCreation() {
   const [workType, setWorkType] = useState("");
   const [description, setDescription] = useState("");
 
+  // Add this state for handling submission states
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
   // Sample job options
   const jobTypes = [
     "Trainee Network Engineers",
@@ -34,18 +38,20 @@ export default function JobCreation() {
     "Project Manager"
   ];
 
-  // Handle form submission
-  const handleSubmit = (e: { preventDefault: () => void; }) => {
+  // Replace your existing handleSubmit function with this one:
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setError("");
 
     // Create job object with form data
     const newJob = {
-      id: jobId,
+      jobId,
       type: jobType,
       field: jobField,
-      date: dueDate,
+      dueDate,
       position: jobPosition,
-      contact: contactNumber,
+      contactNumber,
       salary,
       background,
       location,
@@ -55,16 +61,56 @@ export default function JobCreation() {
       status: "Pending" // Default status
     };
 
-    // Get existing jobs from localStorage or create empty array
-    const existingJobs = JSON.parse(localStorage.getItem("jobs") || "[]");
+    // Updated error handling for your job creation function
+    try {
+      const token = localStorage.getItem("token");
+      console.log("Raw token from localStorage:", token);
+      
+      if (!token) {
+        setError("No authentication token found. Please login again.");
+        return;
+      }
 
-    // Add new job and save back to localStorage
-    existingJobs.push(newJob);
-    localStorage.setItem("jobs", JSON.stringify(existingJobs));
+      // Send job data to backend API
+      const response = await fetch('http://localhost:5000/api/jobs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newJob)
+      });
 
-    // Alert success and redirect to job modification page
-    alert("Job created successfully!");
-    router.push("/job-modification");
+      // Check content type before parsing JSON
+      const contentType = response.headers.get('content-type');
+      
+      if (!response.ok) {
+        // Handle non-JSON error responses
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text();
+          console.error('Server returned non-JSON response:', text);
+          setError('Server error: Invalid response format');
+          return;
+        }
+        
+        // Parse JSON error
+        const data = await response.json();
+        setError(data.error || 'Failed to create job');
+        return;
+      }
+
+      // Success case
+      const data = await response.json();
+      
+      // Alert success and redirect to job modification page
+      alert("Job created successfully!");
+      router.push("/job-modification");
+    } catch (err) {
+      console.error('Job creation error:', err);
+      setError('Network error: Could not connect to server');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -111,6 +157,13 @@ export default function JobCreation() {
         <main className={styles.content}>
           <div className={styles.formCard}>
             <form className={styles.form} onSubmit={handleSubmit}>
+              {/* Add this right before your form or at the top of your form */}
+              {error && (
+                <div className={styles.errorMessage}>
+                  <p>{error}</p>
+                </div>
+              )}
+
               <div className={styles.row}>
                 <div className={styles.fieldWide}>
                   <label>Select Job Type:</label>
@@ -233,7 +286,14 @@ export default function JobCreation() {
                 </div>
               </div>
               <div className={styles.buttonRow}>
-                <button type="submit" className={styles.createBtn}>Create</button>
+                {/* Modify your submit button to show loading state */}
+                <button 
+                  type="submit" 
+                  className={styles.createBtn}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Creating...' : 'Create'}
+                </button>
               </div>
             </form>
           </div>
