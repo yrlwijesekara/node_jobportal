@@ -4,11 +4,15 @@ import styles from '../styles/Home.module.css';
 
 export default function Apply() {
   const router = useRouter();
-  const { jobId, jobTitle: jobTitleParam } = router.query;
+  const { jobId } = router.query;
   const [jobTitle, setJobTitle] = useState("Loading job title...");
+  const [jobDetails, setJobDetails] = useState<any>(null);
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [user, setUser] = useState<{email: string, id: string} | null>(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -21,25 +25,95 @@ export default function Apply() {
     field: ""
   });
 
-  // Get job details from localStorage when component mounts or query params change
+  // Check if user is logged in and get job details
   useEffect(() => {
-    // If direct jobTitle is provided in URL, use it
-    if (jobTitleParam) {
-      setJobTitle(jobTitleParam as string);
-    } 
-    // Otherwise, try to look up by jobId
-    else if (jobId) {
-      const savedJobs = JSON.parse(localStorage.getItem("jobs") || "[]");
-      const selectedJob = savedJobs.find((job: { id: string | string[]; }) => job.id === jobId);
-      
-      if (selectedJob) {
-        // Use job type, position, or a fallback
-        setJobTitle(selectedJob.type || selectedJob.position || "Job Position");
-      } else {
-        setJobTitle("Unknown Job");
+    const checkAuth = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Please log in to apply for jobs");
+        router.push("/login?redirect=/apply?jobId=" + jobId);
+        return;
       }
+
+      try {
+        // Get user info from API
+        const userResponse = await fetch('http://localhost:5000/api/auth/me', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        if (!userResponse.ok) {
+          throw new Error("Failed to get user info");
+        }
+
+        const userData = await userResponse.json();
+        setUser(userData.user);
+        
+        // Pre-fill email from user data
+        setFormData(prev => ({
+          ...prev,
+          email: userData.user.email
+        }));
+      } catch (err) {
+        console.error("Error fetching user data:", err);
+        alert("Please log in again to apply for jobs");
+        router.push("/login");
+      }
+    };
+
+    const fetchJobDetails = async () => {
+      if (!jobId) return;
+      
+      try {
+        setIsLoading(true);
+        const response = await fetch(`http://localhost:5000/api/jobs/${jobId}`);
+        
+        if (!response.ok) {
+          console.error(`Failed to fetch job details: ${response.status}`);
+          setJobTitle("Job Not Found");
+          setError(`Could not load job details. The job might have been removed or doesn't exist.`);
+          return;
+        }
+        
+        const data = await response.json();
+        
+        // Set job details
+        setJobDetails(data.job);
+        
+        // Set job title matching how it's displayed in job cards
+        // This prioritizes type first, then position, and uses a consistent format
+        if (data.job.type) {
+          setJobTitle(data.job.type);
+        } else if (data.job.position) {
+          setJobTitle(data.job.position);
+        } else if (data.job.jobId) {
+          setJobTitle(`Job #${data.job.jobId}`);
+        } else {
+          setJobTitle("Job Position");
+        }
+        
+        // Save additional job details to pre-fill the form if needed
+        if (data.job.field) {
+          setFormData(prev => ({
+            ...prev,
+            field: data.job.field.toLowerCase()
+          }));
+        }
+      } catch (err) {
+        console.error("Error fetching job details:", err);
+        setJobTitle("Unknown Job");
+        setError("Failed to load job details. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+    if (jobId) {
+      fetchJobDetails();
     }
-  }, [jobId, jobTitleParam]);
+  }, [jobId, router]);
 
   // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -51,28 +125,80 @@ export default function Apply() {
   };
 
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Create application object
-    const application = {
-      jobTitle,
-      ...formData,
-      cvFileName: cvFile ? cvFile.name : null,
-      submissionDate: new Date().toISOString(),
-      status: "Pending"
-    };
-    
-    // Save to localStorage
-    const applications = JSON.parse(localStorage.getItem("applications") || "[]");
-    applications.push(application);
-    localStorage.setItem("applications", JSON.stringify(applications));
-    
-    // Show success message and redirect
-    alert("Your application has been submitted successfully!");
-    router.push("/job-status");
+    if (!user) {
+      alert("Please log in to submit your application");
+      router.push("/login");
+      return;
+    }
+
+    if (!jobId) {
+      setError("Missing job ID. Please try again.");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setError("");
+
+      // Create form data for file upload
+      const formDataToSend = new FormData();
+      formDataToSend.append("jobId", jobId as string);
+      formDataToSend.append("nameWithInitials", formData.nameWithInitials);
+      formDataToSend.append("fullName", formData.fullName);
+      formDataToSend.append("gender", formData.gender);
+      formDataToSend.append("dateOfBirth", formData.dateOfBirth);
+      formDataToSend.append("email", formData.email);
+      formDataToSend.append("contactNumber", formData.contactNumber);
+      formDataToSend.append("field", formData.field);
+      
+      // Add CV file if available
+      if (cvFile) {
+        formDataToSend.append("cv", cvFile);
+      }
+
+      // Get token
+      const token = localStorage.getItem("token");
+      
+      // Send application to backend
+      const response = await fetch('http://localhost:5000/api/applications', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formDataToSend
+      });
+
+      // Handle non-OK responses without throwing errors
+      if (!response.ok) {
+        let errorMessage = "Failed to submit application";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          // If parsing JSON fails, use the default error message
+        }
+        
+        console.error(`API Error (${response.status}): ${errorMessage}`);
+        setError(errorMessage);
+        return; // Exit early instead of throwing
+      }
+
+      // Only show success and redirect on successful submission
+      alert("Your application has been submitted successfully!");
+      router.push("/job-status");
+    } catch (err: any) {
+      // This will now only catch network errors or other unexpected exceptions
+      console.error("Error submitting application:", err);
+      setError("Network error while submitting your application. Please check your connection and try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  // File upload handlers
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -114,7 +240,6 @@ export default function Apply() {
           <nav className={styles.nav}>
             <a href="/job-status">Job status</a>
             <span>|</span>
-           
             <a href="/jobs">Jobs</a>
             <span>|</span>
             <a href="/vacancies">jobs for you</a>
@@ -124,6 +249,10 @@ export default function Apply() {
             <a href="/login">Login</a>
           </nav>
         </header>
+
+        {error && (
+          <div className={styles.errorMessage}>{error}</div>
+        )}
 
         <form className={styles.applyForm} onSubmit={handleSubmit}>
           <div className={styles.formRow}>
@@ -187,7 +316,9 @@ export default function Apply() {
               value={formData.email}
               onChange={handleInputChange}
               required
+              readOnly={!!user} // Make email readonly if user is logged in
             />
+            {user && <small className={styles.helperText}>Email from your account</small>}
           </div>
           <div className={styles.formRow}>
             <label className={styles.formLabel}>Contact Number :</label>
@@ -258,7 +389,13 @@ export default function Apply() {
             </div>
           </div>
           <div className={styles.submitRow}>
-            <button type="submit" className={styles.submitBtn}>Submit</button>
+            <button 
+              type="submit" 
+              className={styles.submitBtn} 
+              disabled={isLoading}
+            >
+              {isLoading ? "Submitting..." : "Submit"}
+            </button>
           </div>
         </form>
       </div>

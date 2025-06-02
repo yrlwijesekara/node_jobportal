@@ -618,6 +618,53 @@
   background-color: #003d73;
 }
 
+/* Interview Details Section */
+.interviewDetails {
+  padding: 10px;
+  border-radius: 6px;
+  background-color: #f8f9fa;
+}
+
+.interviewScheduled {
+  font-weight: bold;
+  color: #198754;
+  margin-bottom: 8px;
+}
+
+.interviewInfo {
+  font-size: 14px;
+}
+
+.interviewInfo p {
+  margin: 4px 0;
+}
+
+.interviewNotes {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #ddd;
+}
+
+.interviewPending {
+  color: #0d6efd;
+  font-style: italic;
+}
+
+.acceptedMessage {
+  color: #198754;
+  font-weight: bold;
+}
+
+.rejectedMessage {
+  color: #dc3545;
+  font-style: italic;
+}
+
+.pendingMessage {
+  color: #6c757d;
+  font-style: italic;
+}
+
 /* Responsive Navbar & Cards */
 @media (max-width: 900px) {
   .cards {

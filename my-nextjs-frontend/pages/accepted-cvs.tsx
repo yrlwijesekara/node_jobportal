@@ -3,20 +3,28 @@ import { useRouter } from "next/router";
 import styles from "../styles/JobCreation.module.css";
 import homeStyles from "../styles/Home.module.css";
 
+// Updated type to match MongoDB schema
 type Application = {
-  jobTitle: string;
+  _id: string;
   nameWithInitials: string;
   fullName: string;
   email: string;
   contactNumber: string;
   field: string;
-  cvFileName: string | null;
-  submissionDate: string;
+  cvFilePath: string;
+  submissionDate?: string;
+  createdAt: string;
   status: string;
   interviewDate?: string;
   interviewTime?: string;
   interviewLocation?: string;
   interviewNotes?: string;
+  job: {
+    _id: string;
+    jobId: string;
+    type: string;
+    position: string;
+  };
 };
 
 export default function AcceptedCVs() {
@@ -34,24 +42,64 @@ export default function AcceptedCVs() {
   });
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingApp, setViewingApp] = useState<Application | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // Load shortlisted applications from localStorage on component mount
+  // Load shortlisted applications from API on component mount
   useEffect(() => {
-    const allApplications = JSON.parse(localStorage.getItem("applications") || "[]");
-    // Filter only applications with "Shortlisted" status AND not hidden from admin
-    const shortlisted = allApplications.filter((app: { status: string; hiddenFromAdmin: any; }) => 
-      app.status === "Shortlisted" && !app.hiddenFromAdmin
-    );
-    setShortlistedApplications(shortlisted);
-    setFilteredApplications(shortlisted);
-  }, []);
+    const fetchShortlistedApplications = async () => {
+      try {
+        setIsLoading(true);
+        const token = localStorage.getItem("token");
+        
+        if (!token) {
+          setError("Authentication required. Please log in.");
+          router.push("/login");
+          return;
+        }
+        
+        const response = await fetch("http://localhost:5000/api/applications/shortlisted", {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        // Handle non-200 responses without throwing errors
+        if (!response.ok) {
+          // Try to extract error message from response
+          let errorMessage = "Failed to fetch shortlisted applications";
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } catch (e) {
+            // If parsing JSON fails, use the default error message
+          }
+          
+          console.error(`API Error (${response.status}): ${errorMessage}`);
+          setError(errorMessage);
+          return;
+        }
+        
+        const data = await response.json();
+        setShortlistedApplications(data.applications);
+        setFilteredApplications(data.applications);
+      } catch (err) {
+        console.error("Error fetching shortlisted applications:", err);
+        setError("Failed to load shortlisted applications. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchShortlistedApplications();
+  }, [router]);
 
   // Filter applications based on search input
   useEffect(() => {
     if (search) {
       const filtered = shortlistedApplications.filter((app) =>
         app.nameWithInitials.toLowerCase().includes(search.toLowerCase()) ||
-        app.jobTitle.toLowerCase().includes(search.toLowerCase())
+        (app.job.type || app.job.position || "").toLowerCase().includes(search.toLowerCase())
       );
       setFilteredApplications(filtered);
     } else {
@@ -80,37 +128,46 @@ export default function AcceptedCVs() {
     });
   };
 
-  // Save interview details
-  const handleSaveInterview = () => {
+  // Save interview details to API
+  const handleSaveInterview = async () => {
     if (!currentApp) return;
     
-    // Update the application with interview details
-    const updatedApplications = JSON.parse(localStorage.getItem("applications") || "[]");
-    const appIndex = updatedApplications.findIndex(
-      (app: Application) => 
-        app.nameWithInitials === currentApp.nameWithInitials && 
-        app.jobTitle === currentApp.jobTitle &&
-        app.submissionDate === currentApp.submissionDate
-    );
-    
-    if (appIndex !== -1) {
-      updatedApplications[appIndex] = {
-        ...updatedApplications[appIndex],
-        interviewDate: interviewDetails.date,
-        interviewTime: interviewDetails.time,
-        interviewLocation: interviewDetails.location,
-        interviewNotes: interviewDetails.notes
-      };
+    try {
+      const token = localStorage.getItem("token");
       
-      localStorage.setItem("applications", JSON.stringify(updatedApplications));
+      if (!token) {
+        alert("Authentication required. Please log in again.");
+        router.push("/login");
+        return;
+      }
       
-      // Update the local state
-      const updatedShortlisted = shortlistedApplications.map(app => {
-        if (
-          app.nameWithInitials === currentApp.nameWithInitials && 
-          app.jobTitle === currentApp.jobTitle &&
-          app.submissionDate === currentApp.submissionDate
-        ) {
+      const response = await fetch(`http://localhost:5000/api/applications/${currentApp._id}/interview`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          interviewDate: interviewDetails.date,
+          interviewTime: interviewDetails.time,
+          interviewLocation: interviewDetails.location,
+          interviewNotes: interviewDetails.notes
+        })
+      });
+      
+      if (!response.ok) {
+        let errorMessage = "Failed to schedule interview";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {}
+        
+        throw new Error(errorMessage);
+      }
+      
+      // Update local state with the new interview details
+      const updatedApplications = shortlistedApplications.map(app => {
+        if (app._id === currentApp._id) {
           return {
             ...app,
             interviewDate: interviewDetails.date,
@@ -122,19 +179,48 @@ export default function AcceptedCVs() {
         return app;
       });
       
-      setShortlistedApplications(updatedShortlisted);
-      setFilteredApplications(updatedShortlisted);
+      setShortlistedApplications(updatedApplications);
+      setFilteredApplications(
+        search 
+          ? updatedApplications.filter(app => 
+              app.nameWithInitials.toLowerCase().includes(search.toLowerCase()) ||
+              (app.job.type || app.job.position || "").toLowerCase().includes(search.toLowerCase())
+            )
+          : updatedApplications
+      );
+      
+      setShowModal(false);
+      setCurrentApp(null);
+      alert("Interview scheduled successfully!");
+    } catch (err: any) {
+      console.error("Error scheduling interview:", err);
+      alert(err.message || "Failed to schedule interview. Please try again.");
     }
-    
-    setShowModal(false);
-    setCurrentApp(null);
-    alert("Interview scheduled successfully!");
   };
 
   // View detailed CV info
   const handleViewDetails = (app: Application) => {
     setViewingApp(app);
     setShowViewModal(true);
+  };
+
+  // Download CV from the backend
+  const handleDownloadCV = async (app: Application) => {
+    try {
+      const token = localStorage.getItem("token");
+      
+      if (!token) {
+        alert("Authentication required. Please log in again.");
+        router.push("/login");
+        return;
+      }
+      
+      // Use window.open to download the file
+      window.open(`http://localhost:5000/api/applications/${app._id}/cv?token=${token}`, '_blank');
+    } catch (err) {
+      console.error("Error downloading CV:", err);
+      alert("Failed to download CV file. Please try again.");
+    }
   };
 
   return (
@@ -197,87 +283,94 @@ export default function AcceptedCVs() {
             Shortlisted Candidates
           </h2>
 
-          {/* Shortlisted Applications Table */}
-          <div className={styles.jobModTableWrapper}>
-            <table className={styles.jobModTable}>
-              <thead>
-                <tr>
-                  <th>Job Title</th>
-                  <th>Applicant Name</th>
-                  <th>Email</th>
-                  <th>Interview Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredApplications.length === 0 ? (
+          {/* Loading and Error States */}
+          {isLoading ? (
+            <div className={styles.loadingContainer}>Loading shortlisted applications...</div>
+          ) : error ? (
+            <div className={styles.errorContainer}>{error}</div>
+          ) : (
+            /* Shortlisted Applications Table */
+            <div className={styles.jobModTableWrapper}>
+              <table className={styles.jobModTable}>
+                <thead>
                   <tr>
-                    <td colSpan={5}>No shortlisted applications found.</td>
+                    <th>Job Title</th>
+                    <th>Applicant Name</th>
+                    <th>Email</th>
+                    <th>Interview Status</th>
+                    <th>Actions</th>
                   </tr>
-                ) : (
-                  filteredApplications.map((app, idx) => (
-                    <tr key={idx}>
-                      <td>{app.jobTitle}</td>
-                      <td>{app.nameWithInitials}</td>
-                      <td>{app.email}</td>
-                      <td>
-                        {app.interviewDate ? (
-                          <span style={{ 
-                            background: "#28a745", 
-                            color: "white",
-                            padding: "4px 8px",
-                            borderRadius: "4px"
-                          }}>
-                            Scheduled: {app.interviewDate}
-                          </span>
-                        ) : (
-                          <span style={{ 
-                            background: "#dc3545", 
-                            color: "white",
-                            padding: "4px 8px",
-                            borderRadius: "4px" 
-                          }}>
-                            Not Scheduled
-                          </span>
-                        )}
-                      </td>
-                      <td>
-                        <button
-                          className={styles.viewBtn}
-                          onClick={() => handleViewDetails(app)}
-                          style={{ 
-                            background: "#0055A2",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            padding: "5px 10px",
-                            marginRight: "5px",
-                            cursor: "pointer"
-                          }}
-                        >
-                          View
-                        </button>
-                        <button
-                          className={styles.interviewBtn}
-                          onClick={() => handleScheduleInterview(app)}
-                          style={{ 
-                            background: app.interviewDate ? "#f0ad4e" : "#5cb85c",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            padding: "5px 10px",
-                            cursor: "pointer" 
-                          }}
-                        >
-                          {app.interviewDate ? "Reschedule" : "Schedule Interview"}
-                        </button>
-                      </td>
+                </thead>
+                <tbody>
+                  {filteredApplications.length === 0 ? (
+                    <tr>
+                      <td colSpan={5}>No shortlisted applications found.</td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ) : (
+                    filteredApplications.map((app) => (
+                      <tr key={app._id}>
+                        <td>{app.job.type || app.job.position || "Unknown Job"}</td>
+                        <td>{app.nameWithInitials}</td>
+                        <td>{app.email}</td>
+                        <td>
+                          {app.interviewDate ? (
+                            <span style={{ 
+                              background: "#28a745", 
+                              color: "white",
+                              padding: "4px 8px",
+                              borderRadius: "4px"
+                            }}>
+                              Scheduled: {app.interviewDate}
+                            </span>
+                          ) : (
+                            <span style={{ 
+                              background: "#dc3545", 
+                              color: "white",
+                              padding: "4px 8px",
+                              borderRadius: "4px" 
+                            }}>
+                              Not Scheduled
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <button
+                            className={styles.viewBtn}
+                            onClick={() => handleViewDetails(app)}
+                            style={{ 
+                              background: "#0055A2",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "4px",
+                              padding: "5px 10px",
+                              marginRight: "5px",
+                              cursor: "pointer"
+                            }}
+                          >
+                            View
+                          </button>
+                          <button
+                            className={styles.interviewBtn}
+                            onClick={() => handleScheduleInterview(app)}
+                            style={{ 
+                              background: app.interviewDate ? "#f0ad4e" : "#5cb85c",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "4px",
+                              padding: "5px 10px",
+                              cursor: "pointer" 
+                            }}
+                          >
+                            {app.interviewDate ? "Reschedule" : "Schedule Interview"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
           
           {/* Interview Scheduling Modal */}
           {showModal && currentApp && (
@@ -441,7 +534,7 @@ export default function AcceptedCVs() {
                 <div style={{ marginBottom: "20px" }}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", rowGap: "10px" }}>
                     <strong>Job Title:</strong>
-                    <span>{viewingApp.jobTitle}</span>
+                    <span>{viewingApp.job.type || viewingApp.job.position || "Unknown Job"}</span>
                     
                     <strong>Applicant Name:</strong>
                     <span>{viewingApp.fullName}</span>
@@ -455,16 +548,13 @@ export default function AcceptedCVs() {
                     <strong>Field:</strong>
                     <span>{viewingApp.field}</span>
                     
-                    <strong>CV:</strong>
-                    <span>{viewingApp.cvFileName || "No file"}</span>
-                    
                     <strong>Submitted On:</strong>
-                    <span>{new Date(viewingApp.submissionDate).toLocaleDateString()}</span>
+                    <span>{new Date(viewingApp.createdAt).toLocaleDateString()}</span>
                     
                     <strong>Status:</strong>
                     <span style={{
                       background: viewingApp.status === "Shortlisted" ? "#28a745" : 
-                                 viewingApp.status === "Rejected" ? "#dc3545" : "#ffc107",
+                                viewingApp.status === "Rejected" ? "#dc3545" : "#ffc107",
                       color: "white",
                       padding: "2px 6px",
                       borderRadius: "4px",
@@ -491,31 +581,29 @@ export default function AcceptedCVs() {
                         <span>{viewingApp.interviewLocation}</span>
                         
                         <strong>Notes:</strong>
-                        <span>{viewingApp.interviewNotes || "None"}</span>
+                        <span style={{whiteSpace: "pre-wrap"}}>{viewingApp.interviewNotes || "None"}</span>
                       </div>
                     </>
                   )}
                 </div>
                 
                 <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  {viewingApp.cvFileName && (
-                    <button 
-                      onClick={() => alert(`In a production environment, this would download the file: ${viewingApp.cvFileName}`)}
-                      style={{
-                        padding: "8px 16px",
-                        marginRight: "10px",
-                        backgroundColor: "#28a745",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "4px",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center"
-                      }}
-                    >
-                      <span style={{ marginRight: "5px" }}>📥</span> Download CV
-                    </button>
-                  )}
+                  <button 
+                    onClick={() => handleDownloadCV(viewingApp)}
+                    style={{
+                      padding: "8px 16px",
+                      marginRight: "10px",
+                      backgroundColor: "#28a745",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "4px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center"
+                    }}
+                  >
+                    <span style={{ marginRight: "5px" }}>📥</span> Download CV
+                  </button>
                   <button 
                     onClick={() => setShowViewModal(false)}
                     style={{

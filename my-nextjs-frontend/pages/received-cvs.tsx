@@ -1,24 +1,33 @@
-import React, { useState, useEffect, ReactNode } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import styles from "../styles/JobCreation.module.css";
 import homeStyles from "../styles/Home.module.css";
 import viewerStyles from "../styles/ApplicationViewer.module.css";
 
+// Updated Application type to match your database schema
 type Application = {
-  interviewNotes: React.JSX.Element;
-  interviewLocation: ReactNode;
-  interviewTime: ReactNode;
-  interviewDate: React.JSX.Element;
-  jobTitle: string;
+  _id: string;
   nameWithInitials: string;
   fullName: string;
+  gender: string;
+  dateOfBirth: string;
   email: string;
   contactNumber: string;
   field: string;
-  cvFileName: string | null;
-  submissionDate: string;
+  cvFilePath: string;
   status: string;
-  hiddenFromAdmin?: boolean; // Optional field to track "deleted for admin" status
+  createdAt: string;
+  job: {
+    _id: string;
+    jobId: string;
+    type: string;
+    position: string;
+  };
+  // Optional interview fields
+  interviewDate?: string;
+  interviewTime?: string;
+  interviewLocation?: string;
+  interviewNotes?: string;
 };
 
 export default function ReceivedCVs() {
@@ -29,22 +38,66 @@ export default function ReceivedCVs() {
   const [editIndex, setEditIndex] = useState(-1);
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingApp, setViewingApp] = useState<Application | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // Load applications from localStorage on component mount
+  // Fetch applications from API
   useEffect(() => {
-    const savedApplications = JSON.parse(localStorage.getItem("applications") || "[]");
-    // Only show applications that haven't been hidden from admin
-    const visibleApplications = savedApplications.filter((app: { hiddenFromAdmin: any; }) => !app.hiddenFromAdmin);
-    setApplications(visibleApplications);
-    setFilteredApplications(visibleApplications);
-  }, []);
+    const fetchApplications = async () => {
+      try {
+        setIsLoading(true);
+        const token = localStorage.getItem("token");
+        
+        if (!token) {
+          // Instead of just pushing to login, also set an error
+          setError("Authentication required. Please log in.");
+          router.push("/login");
+          return;
+        }
+        
+        const response = await fetch("http://localhost:5000/api/applications/all", {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        // Handle non-200 responses without throwing errors
+        if (!response.ok) {
+          // Try to extract error message from response
+          let errorMessage = "Failed to fetch applications";
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } catch (e) {
+            // If parsing JSON fails, use the default error message
+          }
+          
+          console.error(`API Error (${response.status}): ${errorMessage}`);
+          setError(errorMessage);
+          return; // Exit early instead of throwing
+        }
+        
+        const data = await response.json();
+        setApplications(data.applications);
+        setFilteredApplications(data.applications);
+      } catch (err) {
+        // This will now only catch network errors or other unexpected exceptions
+        console.error("Error fetching applications:", err);
+        setError("Failed to load applications. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchApplications();
+  }, [router]);
 
   // Filter applications based on search input
   useEffect(() => {
     if (search) {
       const filtered = applications.filter((app) =>
         app.nameWithInitials.toLowerCase().includes(search.toLowerCase()) ||
-        app.jobTitle.toLowerCase().includes(search.toLowerCase())
+        (app.job.type || app.job.position || "").toLowerCase().includes(search.toLowerCase())
       );
       setFilteredApplications(filtered);
     } else {
@@ -53,16 +106,47 @@ export default function ReceivedCVs() {
   }, [search, applications]);
 
   // Handle application status change
-  const handleStatusChange = (index: number, newStatus: string) => {
-    const updatedApplications = [...applications];
-    updatedApplications[index].status = newStatus;
-    
-    setApplications(updatedApplications);
-    localStorage.setItem("applications", JSON.stringify(updatedApplications));
-    setEditIndex(-1);
-    
-    // Show confirmation
-    alert(`Application status has been changed to ${newStatus}`);
+  const handleStatusChange = async (application: Application, newStatus: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+      
+      const response = await fetch(`http://localhost:5000/api/applications/${application._id}/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to update application status");
+      }
+      
+      // Update local state
+      const updatedApplications = applications.map(app => 
+        app._id === application._id ? { ...app, status: newStatus } : app
+      );
+      
+      setApplications(updatedApplications);
+      setFilteredApplications(
+        search ? updatedApplications.filter(app => 
+          app.nameWithInitials.toLowerCase().includes(search.toLowerCase()) ||
+          (app.job.type || app.job.position || "").toLowerCase().includes(search.toLowerCase())
+        ) : updatedApplications
+      );
+      
+      setEditIndex(-1);
+      alert(`Application status has been changed to ${newStatus}`);
+    } catch (err) {
+      console.error("Error updating application status:", err);
+      alert("Failed to update application status. Please try again.");
+    }
   };
 
   // View CV details
@@ -71,55 +155,60 @@ export default function ReceivedCVs() {
     setShowViewModal(true);
   };
 
-  // Download CV file (mock implementation)
-  const handleDownloadCV = (app: Application) => {
-    // In a real application, this would access file storage and download the actual file
-    // For this demo, we'll just show an alert
-    if (app.cvFileName) {
-      alert(`In a production environment, this would download the file: ${app.cvFileName}`);
-    } else {
-      alert("No CV file available for this application.");
+  // Download CV file
+  const handleDownloadCV = async (app: Application) => {
+    try {
+      const token = localStorage.getItem("token");
+      
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+      
+      // Open CV in new window or initiate download
+      window.open(`http://localhost:5000/api/applications/${app._id}/cv?token=${token}`, '_blank');
+    } catch (err) {
+      console.error("Error downloading CV:", err);
+      alert("Failed to download CV. Please try again later.");
     }
   };
 
   // Handle application deletion
-  const handleDeleteApplication = (app: Application, idx: number) => {
-    // Confirm before deleting
-    if (window.confirm("Are you sure you want to delete this application from admin view? Users will still see their applications.")) {
+  const handleDeleteApplication = async (app: Application) => {
+    if (window.confirm("Are you sure you want to delete this application? This action cannot be undone.")) {
       try {
-        // Get all applications directly from localStorage
-        const allApplications = JSON.parse(localStorage.getItem("applications") || "[]");
+        const token = localStorage.getItem("token");
         
-        // Find the specific application to mark as deleted for admin
-        const updatedApplications = allApplications.map((savedApp: { nameWithInitials: string; jobTitle: string; submissionDate: string; }) => {
-          if (
-            savedApp.nameWithInitials === app.nameWithInitials && 
-            savedApp.jobTitle === app.jobTitle && 
-            savedApp.submissionDate === app.submissionDate
-          ) {
-            // Mark as deleted for admin view only
-            return { ...savedApp, hiddenFromAdmin: true };
+        if (!token) {
+          router.push("/login");
+          return;
+        }
+        
+        const response = await fetch(`http://localhost:5000/api/applications/${app._id}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`
           }
-          return savedApp;
         });
         
-        // Update localStorage
-        localStorage.setItem("applications", JSON.stringify(updatedApplications));
+        if (!response.ok) {
+          throw new Error("Failed to delete application");
+        }
         
-        // Update local state - filter out admin-deleted applications
-        const visibleApplications = updatedApplications.filter((app: { hiddenFromAdmin: any; }) => !app.hiddenFromAdmin);
-        setApplications(visibleApplications);
-        setFilteredApplications(visibleApplications.filter((a: { nameWithInitials: string; jobTitle: string; }) => 
-          !search || 
-          a.nameWithInitials.toLowerCase().includes(search.toLowerCase()) ||
-          a.jobTitle.toLowerCase().includes(search.toLowerCase())
-        ));
+        // Update local state
+        const updatedApplications = applications.filter(a => a._id !== app._id);
+        setApplications(updatedApplications);
+        setFilteredApplications(
+          search ? updatedApplications.filter(a => 
+            a.nameWithInitials.toLowerCase().includes(search.toLowerCase()) ||
+            (a.job.type || a.job.position || "").toLowerCase().includes(search.toLowerCase())
+          ) : updatedApplications
+        );
         
-        // Show confirmation
-        alert("Application has been removed from admin view");
-      } catch (error) {
-        console.error("Error hiding application:", error);
-        alert("An error occurred while removing the application");
+        alert("Application has been deleted successfully");
+      } catch (err) {
+        console.error("Error deleting application:", err);
+        alert("Failed to delete application. Please try again.");
       }
     }
   };
@@ -180,86 +269,94 @@ export default function ReceivedCVs() {
             />
           </div>
 
-          {/* Applications Table */}
-          <div className={styles.jobModTableWrapper}>
-            <table className={styles.jobModTable}>
-              <thead>
-                <tr>
-                  <th>Job Title</th>
-                  <th>Applicant Name</th>
-                  <th>Submission Date</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredApplications.length === 0 ? (
+          {/* Loading or Error State */}
+          {isLoading ? (
+            <div className={styles.loadingContainer}>Loading applications...</div>
+          ) : error ? (
+            <div className={styles.errorContainer}>{error}</div>
+          ) : (
+            /* Applications Table */
+            <div className={styles.jobModTableWrapper}>
+              <table className={styles.jobModTable}>
+                <thead>
                   <tr>
-                    <td colSpan={5}>No applications found.</td>
+                    <th>Job Title</th>
+                    <th>Applicant Name</th>
+                    <th>Submission Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                   </tr>
-                ) : (
-                  filteredApplications.map((app, idx) => (
-                    <tr key={idx}>
-                      <td>{app.jobTitle}</td>
-                      <td>{app.nameWithInitials}</td>
-                      <td>{new Date(app.submissionDate).toLocaleDateString()}</td>
-                      <td>
-                        {editIndex === applications.indexOf(app) ? (
-                          <select
-                            value={app.status}
-                            onChange={(e) => handleStatusChange(applications.indexOf(app), e.target.value)}
-                            style={{ fontSize: "15px", borderRadius: "8px", padding: "4px 8px" }}
-                          >
-                            <option value="Pending">Pending</option>
-                            <option value="Shortlisted">Shortlisted</option>
-                            <option value="Rejected">Rejected</option>
-                          </select>
-                        ) : (
-                          <span
-                            className={
-                              app.status === "Shortlisted" 
-                                ? styles.accepted 
-                                : app.status === "Rejected" 
-                                ? styles.jobModRejected 
-                                : styles.pending
-                            }
-                          >
-                            {app.status}
-                          </span>
-                        )}
-                      </td>
-                      <td>
-                        <button
-                          className={`${viewerStyles.tableBtn} ${viewerStyles.tableViewBtn}`}
-                          onClick={() => handleViewDetails(app)}
-                        >
-                          View
-                        </button>
-                        <button
-                          className={`${viewerStyles.tableBtn} ${viewerStyles.tableEditBtn}`}
-                          onClick={() => setEditIndex(applications.indexOf(app))}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className={`${viewerStyles.tableBtn} ${viewerStyles.tableDownloadBtn}`}
-                          onClick={() => handleDownloadCV(app)}
-                        >
-                          📥 CV
-                        </button>
-                        <button
-                          className={`${viewerStyles.tableBtn} ${viewerStyles.tableDeleteBtn}`}
-                          onClick={() => handleDeleteApplication(app, idx)}
-                        >
-                          🗑️ Delete
-                        </button>
-                      </td>
+                </thead>
+                <tbody>
+                  {filteredApplications.length === 0 ? (
+                    <tr>
+                      <td colSpan={5}>No applications found.</td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ) : (
+                    filteredApplications.map((app, idx) => (
+                      <tr key={app._id}>
+                        <td>{app.job.type || app.job.position || "Unknown Job"}</td>
+                        <td>{app.nameWithInitials}</td>
+                        <td>{new Date(app.createdAt).toLocaleDateString()}</td>
+                        <td>
+                          {editIndex === idx ? (
+                            <select
+                              value={app.status}
+                              onChange={(e) => handleStatusChange(app, e.target.value)}
+                              style={{ fontSize: "15px", borderRadius: "8px", padding: "4px 8px" }}
+                            >
+                              <option value="Pending">Pending</option>
+                              <option value="Reviewing">Reviewing</option>
+                              <option value="Shortlisted">Shortlisted</option>
+                              <option value="Rejected">Rejected</option>
+                            </select>
+                          ) : (
+                            <span
+                              className={
+                                app.status === "Shortlisted" || app.status === "Accepted"
+                                  ? styles.accepted 
+                                  : app.status === "Rejected" 
+                                  ? styles.jobModRejected 
+                                  : styles.pending
+                              }
+                            >
+                              {app.status}
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <button
+                            className={`${viewerStyles.tableBtn} ${viewerStyles.tableViewBtn}`}
+                            onClick={() => handleViewDetails(app)}
+                          >
+                            View
+                          </button>
+                          <button
+                            className={`${viewerStyles.tableBtn} ${viewerStyles.tableEditBtn}`}
+                            onClick={() => setEditIndex(idx)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className={`${viewerStyles.tableBtn} ${viewerStyles.tableDownloadBtn}`}
+                            onClick={() => handleDownloadCV(app)}
+                          >
+                            📥 CV
+                          </button>
+                          <button
+                            className={`${viewerStyles.tableBtn} ${viewerStyles.tableDeleteBtn}`}
+                            onClick={() => handleDeleteApplication(app)}
+                          >
+                            🗑️ Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           {/* View Application Details Modal */}
           {showViewModal && viewingApp && (
@@ -272,7 +369,7 @@ export default function ReceivedCVs() {
                 <div className={viewerStyles.modalSection}>
                   <div className={viewerStyles.modalGrid}>
                     <strong>Job Title:</strong>
-                    <span>{viewingApp.jobTitle}</span>
+                    <span>{viewingApp.job.type || viewingApp.job.position || "Unknown Job"}</span>
                     
                     <strong>Name with Initials:</strong>
                     <span>{viewingApp.nameWithInitials}</span>
@@ -289,15 +386,12 @@ export default function ReceivedCVs() {
                     <strong>Field:</strong>
                     <span>{viewingApp.field}</span>
                     
-                    <strong>CV:</strong>
-                    <span>{viewingApp.cvFileName || "No file"}</span>
-                    
                     <strong>Submitted On:</strong>
-                    <span>{new Date(viewingApp.submissionDate).toLocaleDateString()}</span>
+                    <span>{new Date(viewingApp.createdAt).toLocaleDateString()}</span>
                     
                     <strong>Status:</strong>
                     <span className={`${viewerStyles.statusBadge} ${
-                      viewingApp.status === "Shortlisted" ? viewerStyles.statusShortlisted : 
+                      viewingApp.status === "Shortlisted" || viewingApp.status === "Accepted" ? viewerStyles.statusShortlisted : 
                       viewingApp.status === "Rejected" ? viewerStyles.statusRejected : 
                       viewerStyles.statusPending
                     }`}>
@@ -333,17 +427,18 @@ export default function ReceivedCVs() {
                 </div>
                 
                 <div className={viewerStyles.modalActions}>
-                  {viewingApp.cvFileName && (
-                    <button 
-                      onClick={() => handleDownloadCV(viewingApp)}
-                      className={`${viewerStyles.btn} ${viewerStyles.btnSuccess}`}
-                    >
-                      <span className={viewerStyles.iconMargin}>📥</span> Download CV
-                    </button>
-                  )}
+                  <button 
+                    onClick={() => handleDownloadCV(viewingApp)}
+                    className={`${viewerStyles.btn} ${viewerStyles.btnSuccess}`}
+                  >
+                    <span className={viewerStyles.iconMargin}>📥</span> Download CV
+                  </button>
                   
                   <button 
-                    onClick={() => setEditIndex(applications.indexOf(viewingApp))}
+                    onClick={() => {
+                      setEditIndex(filteredApplications.findIndex(app => app._id === viewingApp._id));
+                      setShowViewModal(false);
+                    }}
                     className={`${viewerStyles.btn} ${viewerStyles.btnSecondary}`}
                   >
                     Edit Status

@@ -1,67 +1,117 @@
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import styles from '../styles/Home.module.css';
 
+// Updated Application type to match your database schema
 type Application = {
-  jobTitle: string;
+  _id: string;
   nameWithInitials: string;
   fullName: string;
   field: string;
   email: string;
+  contactNumber: string;
   status: string;
-  submissionDate: string;
+  createdAt: string;
   interviewDate?: string;
   interviewTime?: string;
   interviewLocation?: string;
   interviewNotes?: string;
-  hiddenFromUser?: boolean; // Add this flag to track user-side deletions
+  job: {
+    _id: string;
+    type: string;
+    position: string;
+    field: string;
+  };
 };
 
 export default function JobStatus() {
+  const router = useRouter();
   const [applications, setApplications] = useState<Application[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
   
-  // Load applications from localStorage - filtered to exclude user-hidden ones
+  // Load applications from API on component mount
   useEffect(() => {
-    const savedApplications = JSON.parse(localStorage.getItem("applications") || "[]");
-    // Only show applications NOT hidden from user
-    const visibleApplications = savedApplications.filter((app: { hiddenFromUser: any; }) => !app.hiddenFromUser);
-    setApplications(visibleApplications);
-  }, []);
-
-  // Function to handle user deletion (hide from user view only)
-  const handleDeleteApplication = (app: Application) => {
-    if (window.confirm("Are you sure you want to delete this application from your view?")) {
+    const fetchUserApplications = async () => {
       try {
-        // Get all applications from localStorage
-        const allApplications = JSON.parse(localStorage.getItem("applications") || "[]");
+        setIsLoading(true);
+        const token = localStorage.getItem("token");
         
-        // Mark the specific application as hidden for user
-        const updatedApplications = allApplications.map((savedApp: { nameWithInitials: string; jobTitle: string; submissionDate: string; }) => {
-          if (
-            savedApp.nameWithInitials === app.nameWithInitials && 
-            savedApp.jobTitle === app.jobTitle && 
-            savedApp.submissionDate === app.submissionDate
-          ) {
-            // Mark as hidden for user view only
-            return { ...savedApp, hiddenFromUser: true };
+        if (!token) {
+          setError("Please login to view your applications");
+          router.push("/login?redirect=/job-status");
+          return;
+        }
+        
+        const response = await fetch("http://localhost:5000/api/applications/me", {
+          headers: {
+            Authorization: `Bearer ${token}`
           }
-          return savedApp;
         });
         
-        // Update localStorage
-        localStorage.setItem("applications", JSON.stringify(updatedApplications));
+        // Handle non-200 responses without throwing errors
+        if (!response.ok) {
+          let errorMessage = "Failed to fetch your applications";
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } catch (e) {
+            // If parsing JSON fails, use the default error message
+          }
+          
+          console.error(`API Error (${response.status}): ${errorMessage}`);
+          setError(errorMessage);
+          return;
+        }
         
-        // Update state - remove the deleted application from view
-        setApplications(applications.filter(a => 
-          !(a.nameWithInitials === app.nameWithInitials && 
-            a.jobTitle === app.jobTitle && 
-            a.submissionDate === app.submissionDate)
-        ));
+        const data = await response.json();
+        setApplications(data.applications);
+      } catch (err) {
+        console.error("Error fetching applications:", err);
+        setError("Failed to load your applications. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchUserApplications();
+  }, [router]);
+
+  // Function to handle application deletion
+  const handleHideApplication = async (appId: string) => {
+    if (window.confirm("Are you sure you want to hide this application from your view?")) {
+      try {
+        const token = localStorage.getItem("token");
         
-        // Show confirmation
-        alert("Application has been removed from your view");
-      } catch (error) {
-        console.error("Error hiding application:", error);
-        alert("An error occurred while removing the application");
+        if (!token) {
+          alert("Please login to manage your applications");
+          router.push("/login");
+          return;
+        }
+        
+        const response = await fetch(`http://localhost:5000/api/applications/${appId}/hide`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) {
+          let errorMessage = "Failed to hide application";
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } catch (e) {}
+          
+          throw new Error(errorMessage);
+        }
+        
+        // Update local state - remove the hidden application
+        setApplications(applications.filter(app => app._id !== appId));
+        alert("Application has been hidden from your view");
+      } catch (err: any) {
+        console.error("Error hiding application:", err);
+        alert(err.message || "An error occurred while hiding the application");
       }
     }
   };
@@ -70,9 +120,12 @@ export default function JobStatus() {
   const getStatusColor = (status: string) => {
     switch(status) {
       case "Shortlisted":
+      case "Accepted":
         return "#28a745"; // green
       case "Rejected":
         return "#dc3545"; // red
+      case "Reviewing":
+        return "#fd7e14"; // orange
       default:
         return "#ffc107"; // yellow for pending
     }
@@ -93,7 +146,6 @@ export default function JobStatus() {
           <span className={styles.title}>Training Program</span>
           <nav className={styles.nav}>
             <a href="/job-status" className={styles.active}>Job status</a>
-            
             <span>|</span>
             <a href="/jobs">Jobs</a>
             <span>|</span>
@@ -109,7 +161,29 @@ export default function JobStatus() {
         <div className={styles.statusCard}>
           <h1 className={styles.statusHeading}>Your Job Applications</h1>
           
-          {applications.length === 0 ? (
+          {isLoading ? (
+            <div style={{ textAlign: 'center', padding: '30px' }}>
+              <p>Loading your applications...</p>
+            </div>
+          ) : error ? (
+            <div style={{ textAlign: 'center', padding: '30px', color: '#dc3545' }}>
+              <p>{error}</p>
+              <a 
+                href="/login" 
+                style={{
+                  display: 'inline-block',
+                  marginTop: '15px',
+                  background: '#0055A2',
+                  color: 'white',
+                  padding: '10px 20px',
+                  borderRadius: '5px',
+                  textDecoration: 'none'
+                }}
+              >
+                Login to View Applications
+              </a>
+            </div>
+          ) : applications.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '30px' }}>
               <p>You haven't applied for any jobs yet.</p>
               <a 
@@ -136,15 +210,15 @@ export default function JobStatus() {
                   <th>Applied Date</th>
                   <th>Status</th>
                   <th>Interview Details</th>
-                  <th>Actions</th> {/* Add this column */}
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {applications.map((app, index) => (
-                  <tr key={index}>
-                    <td>{app.jobTitle}</td>
-                    <td>{app.field}</td>
-                    <td>{formatDate(app.submissionDate)}</td>
+                {applications.map((app) => (
+                  <tr key={app._id}>
+                    <td>{app.job.type || app.job.position || "Job Position"}</td>
+                    <td>{app.job.field || app.field}</td>
+                    <td>{formatDate(app.createdAt)}</td>
                     <td>
                       <span style={{
                         background: getStatusColor(app.status),
@@ -158,48 +232,52 @@ export default function JobStatus() {
                     </td>
                     <td>
                       {app.status === "Shortlisted" && (
-                        <div>
+                        <div className={styles.interviewDetails}>
                           {app.interviewDate ? (
-                            <div style={{ fontSize: '14px' }}>
-                              <div><strong>Date:</strong> {app.interviewDate}</div>
-                              <div><strong>Time:</strong> {app.interviewTime}</div>
-                              <div><strong>Location:</strong> {app.interviewLocation}</div>
-                              {app.interviewNotes && (
-                                <div>
-                                  <strong>Notes:</strong>
-                                  <p style={{ 
-                                    margin: '3px 0',
-                                    fontStyle: 'italic',
-                                    fontSize: '13px'
-                                  }}>
-                                    {app.interviewNotes}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
+                            <>
+                              <div className={styles.interviewScheduled}>Interview Scheduled!</div>
+                              <div className={styles.interviewInfo}>
+                                <p><strong>Date:</strong> {app.interviewDate}</p>
+                                <p><strong>Time:</strong> {app.interviewTime}</p>
+                                <p><strong>Location:</strong> {app.interviewLocation}</p>
+                                {app.interviewNotes && (
+                                  <div className={styles.interviewNotes}>
+                                    <strong>Additional Notes:</strong>
+                                    <p>{app.interviewNotes}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </>
                           ) : (
-                            <span style={{ color: '#666', fontStyle: 'italic' }}>
-                              Interview to be scheduled
+                            <span className={styles.interviewPending}>
+                              Your application is shortlisted.
                             </span>
                           )}
                         </div>
                       )}
-                      {app.status === "Rejected" && (
-                        <span style={{ color: '#666', fontStyle: 'italic' }}>
-                          Application not selected
+                      {app.status === "Accepted" && (
+                        <span className={styles.acceptedMessage}>
+                          Congratulations! Your application has been accepted.
                         </span>
                       )}
-                      {app.status === "Pending" && (
-                        <span style={{ color: '#666', fontStyle: 'italic' }}>
-                          Under review
+                      {app.status === "Rejected" && (
+                        <span className={styles.rejectedMessage}>
+                          Application not selected for this position.
+                        </span>
+                      )}
+                      {(app.status === "Pending" || app.status === "Reviewing") && (
+                        <span className={styles.pendingMessage}>
+                          Application still under review.
                         </span>
                       )}
                     </td>
                     <td>
-                      {(app.status === "Shortlisted" && app.interviewDate) || app.status === "Rejected" ? (
-                        // Allow deletion if interview is scheduled OR application is rejected
+                      {(app.status === "Shortlisted" && app.interviewDate) || 
+                       app.status === "Rejected" ||
+                       app.status === "Accepted" ? (
+                        // Allow hiding if interview is scheduled OR application is rejected/accepted
                         <button
-                          onClick={() => handleDeleteApplication(app)}
+                          onClick={() => handleHideApplication(app._id)}
                           style={{ 
                             background: "#dc3545",
                             color: "white",
@@ -210,7 +288,7 @@ export default function JobStatus() {
                             fontSize: "14px"
                           }}
                         >
-                          Delete
+                          Hide
                         </button>
                       ) : (
                         // Disabled button with tooltip for pending or shortlisted without interview
@@ -229,11 +307,11 @@ export default function JobStatus() {
                             }}
                             title={
                               app.status === "Shortlisted" 
-                                ? "Cannot delete until interview is scheduled" 
-                                : "Cannot delete until application is processed"
+                                ? "Cannot hide until interview is scheduled" 
+                                : "Cannot hide until application is processed"
                             }
                           >
-                            Delete
+                            Hide
                           </button>
                           <span style={{
                             position: "absolute",
@@ -243,7 +321,9 @@ export default function JobStatus() {
                             color: "#666",
                             whiteSpace: "nowrap"
                           }}>
-                            {app.status === "Pending" ? "Application under review" : "Awaiting interview details"}
+                            {app.status === "Pending" || app.status === "Reviewing" 
+                              ? "Application under review" 
+                              : "Awaiting interview details"}
                           </span>
                         </div>
                       )}

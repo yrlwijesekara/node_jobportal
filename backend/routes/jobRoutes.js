@@ -18,4 +18,7 @@ router.put('/:id/status', protect, admin, jobController.updateJobStatus);
 // Delete job
 router.delete('/:id', protect, admin, jobController.deleteJob);
 
+// Get job by ID (public route)
+router.get('/:id', jobController.getJobById);
+
 module.exports = router;
