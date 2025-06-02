@@ -155,14 +155,19 @@ export default function AcceptedCVs() {
         })
       });
       
+      // Handle non-OK responses without throwing errors
       if (!response.ok) {
         let errorMessage = "Failed to schedule interview";
         try {
           const errorData = await response.json();
           errorMessage = errorData.error || errorMessage;
-        } catch (e) {}
+        } catch (e) {
+          // If parsing JSON fails, use the default error message
+        }
         
-        throw new Error(errorMessage);
+        console.error(`API Error (${response.status}): ${errorMessage}`);
+        alert(errorMessage);
+        return; // Exit early instead of throwing
       }
       
       // Update local state with the new interview details
@@ -192,9 +197,10 @@ export default function AcceptedCVs() {
       setShowModal(false);
       setCurrentApp(null);
       alert("Interview scheduled successfully!");
-    } catch (err: any) {
+    } catch (err) {
+      // This will now only catch network errors or other unexpected exceptions
       console.error("Error scheduling interview:", err);
-      alert(err.message || "Failed to schedule interview. Please try again.");
+      alert("Network error while scheduling interview. Please check your connection and try again.");
     }
   };
 
