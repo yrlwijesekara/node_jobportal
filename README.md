@@ -60,7 +60,7 @@ Admin panel
 
 ## **📞 Contact**  
 ✉️ **Email:** [yehanjb@gmail.com](mailto:yehanjb@gmail.com)  
-🔗 **LinkedIn:** [Yehan Raveesha](https://linkedin.com/in/Yehan Raveesha)  
+🔗 **LinkedIn:** [Yehan Raveesha]([https://linkedin.com/in/Yehan Raveesha](https://www.linkedin.com/in/yehan-raveesha-245a45357/))  
 
 
 <div align="center"> <h3>🌟 **Star this repo if you like it!** 🌟</h3> <a href="https://github.com/yrlwijesekara/node_jobportal"> <img src="https://img.shields.io/github/stars/yrlwijesekara/node_jobportal?style=social" /> </a> </div>
