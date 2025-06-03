@@ -104,6 +104,7 @@ export default function JobCreation() {
       
       // Alert success and redirect to job modification page
       alert("Job created successfully!");
+      localStorage.setItem("jobsUpdated", "true");
       router.push("/job-modification");
     } catch (err) {
       console.error('Job creation error:', err);

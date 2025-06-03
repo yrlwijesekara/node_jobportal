@@ -32,28 +32,34 @@ export default function Vacancies() {
     const fetchJobs = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('http://localhost:5000/api/jobs');
+        
+        // Use the latest endpoint to get the 4 most recent jobs
+        const response = await fetch('http://localhost:5000/api/jobs/latest');
         
         if (!response.ok) {
-          throw new Error("Failed to fetch jobs");
+          // Instead of throwing an error, handle it gracefully
+          const errorText = await response.text();
+          console.error(`API Error (${response.status}):`, errorText);
+          setError(`Failed to load jobs: ${response.status}`);
+          setIsLoading(false);
+          return; // Exit early
         }
         
         const data = await response.json();
+        console.log("Latest jobs:", data.jobs);
         
-        // Filter for accepted jobs only
-        const acceptedJobs = data.jobs
-          .filter((job: Job) => job.status === "Accepted")
-          // Sort by creation date (newest first)
-          .sort((a: Job, b: Job) => 
-            new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime()
-          )
-          // Add this line to take only the newest 4 jobs
-          .slice(0, 4);
-          
-        setJobs(acceptedJobs);
+        if (!data.jobs || !Array.isArray(data.jobs)) {
+          console.error("Invalid data format:", data);
+          setError("Invalid data received from server");
+          setIsLoading(false);
+          return;
+        }
+        
+        // No need to filter - backend already returns only accepted jobs
+        setJobs(data.jobs);
       } catch (err) {
         console.error("Error fetching jobs:", err);
-        setError("Failed to load jobs. Please try again later.");
+        setError("Network error while loading jobs. Please check your connection.");
       } finally {
         setIsLoading(false);
       }

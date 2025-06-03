@@ -178,6 +178,45 @@ export default function JobModification() {
     }
   };
 
+  // Add at the top of your component, after useState declarations
+  useEffect(() => {
+    // Check if we're coming from job creation with new data
+    const jobsUpdated = localStorage.getItem("jobsUpdated") === "true";
+    if (jobsUpdated) {
+      // Clear the flag
+      localStorage.removeItem("jobsUpdated");
+      
+      // Delay slightly to ensure component is mounted
+      setTimeout(() => {
+        // Fetch with timestamp to prevent caching
+        const fetchLatestJobs = async () => {
+          try {
+            const token = localStorage.getItem("token");
+            if (!token) return;
+            
+            const response = await fetch(`http://localhost:5000/api/jobs?fresh=${Date.now()}`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              }
+            });
+            
+            if (!response.ok) return;
+            
+            const data = await response.json();
+            if (data.jobs) {
+              setJobs(data.jobs);
+              setFilteredJobs(data.jobs);
+            }
+          } catch (err) {
+            console.error("Error in auto refresh:", err);
+          }
+        };
+        
+        fetchLatestJobs();
+      }, 500);
+    }
+  }, []);
+
   return (
     <>
       {/* Top Navbar */}
@@ -232,6 +271,59 @@ export default function JobModification() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+            
+            {/* Add this refresh button */}
+            <button 
+              className={styles.refreshButton}
+              onClick={() => {
+                // Create a new function that calls your fetchJobs indirectly
+                const refreshJobsList = async () => {
+                  setIsLoading(true);
+                  setError("");
+                  
+                  try {
+                    const token = localStorage.getItem("token");
+                    if (!token) {
+                      router.push("/login");
+                      return;
+                    }
+                    
+                    const response = await fetch(`http://localhost:5000/api/jobs?_t=${Date.now()}`, {
+                      headers: {
+                        Authorization: `Bearer ${token}`,
+                      },
+                    });
+                    
+                    if (!response.ok) {
+                      const errorText = await response.text();
+                      console.error("API Error:", errorText);
+                      setError(`Failed to refresh jobs: ${response.status}`);
+                      return;
+                    }
+                    
+                    const data = await response.json();
+                    console.log("Refreshed jobs:", data.jobs);
+                    
+                    // Update state with fresh data
+                    setJobs(data.jobs);
+                    setFilteredJobs(
+                      search ? 
+                        data.jobs.filter(j => j.jobId.toLowerCase().includes(search.toLowerCase())) : 
+                        data.jobs
+                    );
+                  } catch (err) {
+                    console.error("Error refreshing jobs:", err);
+                    setError("Failed to refresh jobs. Please try again.");
+                  } finally {
+                    setIsLoading(false);
+                  }
+                };
+                
+                refreshJobsList();
+              }}
+            >
+              Refresh Jobs
+            </button>
           </div>
 
           {/* Error Message */}

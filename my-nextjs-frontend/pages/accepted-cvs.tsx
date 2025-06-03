@@ -210,25 +210,6 @@ export default function AcceptedCVs() {
     setShowViewModal(true);
   };
 
-  // Download CV from the backend
-  const handleDownloadCV = async (app: Application) => {
-    try {
-      const token = localStorage.getItem("token");
-      
-      if (!token) {
-        alert("Authentication required. Please log in again.");
-        router.push("/login");
-        return;
-      }
-      
-      // Use window.open to download the file
-      window.open(`http://localhost:5000/api/applications/${app._id}/cv?token=${token}`, '_blank');
-    } catch (err) {
-      console.error("Error downloading CV:", err);
-      alert("Failed to download CV file. Please try again.");
-    }
-  };
-
   return (
     <>
       {/* Top Navbar */}
@@ -594,22 +575,6 @@ export default function AcceptedCVs() {
                 </div>
                 
                 <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <button 
-                    onClick={() => handleDownloadCV(viewingApp)}
-                    style={{
-                      padding: "8px 16px",
-                      marginRight: "10px",
-                      backgroundColor: "#28a745",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "4px",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center"
-                    }}
-                  >
-                    <span style={{ marginRight: "5px" }}>📥</span> Download CV
-                  </button>
                   <button 
                     onClick={() => setShowViewModal(false)}
                     style={{

@@ -40,6 +40,7 @@ export default function ReceivedCVs() {
   const [viewingApp, setViewingApp] = useState<Application | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isDownloading, setIsDownloading] = useState<string | null>(null); // Track download state
 
   // Fetch applications from API
   useEffect(() => {
@@ -161,15 +162,54 @@ export default function ReceivedCVs() {
       const token = localStorage.getItem("token");
       
       if (!token) {
+        alert("Authentication required. Please login.");
         router.push("/login");
         return;
       }
       
-      // Open CV in new window or initiate download
-      window.open(`http://localhost:5000/api/applications/${app._id}/cv?token=${token}`, '_blank');
+      // Show loading indicator
+      setIsDownloading(app._id);
+      
+      // Use fetch instead of window.open to properly handle authentication
+      const response = await fetch(`http://localhost:5000/api/applications/${app._id}/cv`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Download CV error:", errorText);
+        alert("Failed to download CV. Please ensure the file exists.");
+        return;
+      }
+      
+      // Get filename from response headers or use a default name
+      const contentDisposition = response.headers.get('content-disposition');
+      let filename = 'cv-document.pdf';
+      
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch) {
+          filename = filenameMatch[1];
+        }
+      }
+      
+      // Convert response to blob and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Error downloading CV:", err);
-      alert("Failed to download CV. Please try again later.");
+      alert("Network error while downloading CV. Please try again.");
+    } finally {
+      setIsDownloading(null);
     }
   };
 
@@ -340,8 +380,9 @@ export default function ReceivedCVs() {
                           <button
                             className={`${viewerStyles.tableBtn} ${viewerStyles.tableDownloadBtn}`}
                             onClick={() => handleDownloadCV(app)}
+                            disabled={isDownloading === app._id}
                           >
-                            📥 CV
+                            {isDownloading === app._id ? "Downloading..." : "📥 CV"}
                           </button>
                           <button
                             className={`${viewerStyles.tableBtn} ${viewerStyles.tableDeleteBtn}`}

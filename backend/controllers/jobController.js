@@ -27,19 +27,24 @@ exports.createJob = async (req, res) => {
 // Get all jobs
 exports.getAllJobs = async (req, res) => {
   try {
+    console.log("getAllJobs called, user:", req.user?._id);
+    
+    // For debugging, log all jobs in the database
+    const allJobsInDb = await Job.find();
+    console.log(`Total jobs in database: ${allJobsInDb.length}`);
+    
     // Add filters based on query parameters
     const filters = {};
     
+    // Apply filters only if explicitly provided in the query params
     if (req.query.field) {
       filters.field = req.query.field;
     }
     
     if (req.query.status) {
       filters.status = req.query.status;
-    } else {
-      // By default, only show accepted jobs
-      filters.status = 'Accepted';
     }
+    // Remove the "else" case to avoid filtering by default
     
     // Add search functionality
     if (req.query.search) {
@@ -178,6 +183,30 @@ exports.deleteJob = async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Server error while deleting job'
+    });
+  }
+};
+
+// Get public jobs (all accepted jobs)
+exports.getPublicJobs = async (req, res) => {
+  try {
+    console.log("getPublicJobs called");
+    
+    // Find all accepted jobs without limit
+    const jobs = await Job.find({ status: 'Accepted' }).sort('-createdAt');
+    
+    console.log(`Found ${jobs.length} public jobs`);
+    
+    res.status(200).json({
+      success: true,
+      count: jobs.length,
+      jobs
+    });
+  } catch (error) {
+    console.error('Get public jobs error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error while fetching public jobs'
     });
   }
 };

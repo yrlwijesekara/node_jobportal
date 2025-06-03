@@ -1,24 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const jobController = require('../controllers/jobController');
-const { protect } = require('../middleware/auth'); // If you're using authentication
+const { protect } = require('../middleware/auth');
 
-// Only admins can create jobs
-router.post('/', protect, jobController.createJob);
-
-// Get all jobs (public route)
-router.get('/', jobController.getAllJobs);
-
-// Get latest jobs (public route)
+// Public specific routes - MUST COME BEFORE PARAMETER ROUTES
+router.get('/public', jobController.getPublicJobs); // Move this up
 router.get('/latest', jobController.getLatestJobs);
 
-// Update job status
+// Protected routes (specific)
+router.post('/', protect, jobController.createJob);
+router.get('/', protect, jobController.getAllJobs);
 router.put('/:id/status', protect, jobController.updateJobStatus);
-
-// Delete job
 router.delete('/:id', protect, jobController.deleteJob);
 
-// Get job by ID (public route)
+// Parameter routes (catch-all) - MUST COME LAST
 router.get('/:id', jobController.getJobById);
 
 module.exports = router;

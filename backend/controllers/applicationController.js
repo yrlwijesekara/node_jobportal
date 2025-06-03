@@ -334,35 +334,32 @@ exports.deleteApplication = async (req, res) => {
 // Download CV - admin only
 exports.downloadCV = async (req, res) => {
   try {
-    // Check if user is admin
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        error: 'Not authorized to download CVs'
-      });
-    }
-    
     const application = await Application.findById(req.params.id);
     
-    if (!application || !application.cvFilePath) {
+    if (!application) {
       return res.status(404).json({
         success: false,
-        error: 'CV not found'
+        error: 'Application not found'
       });
     }
     
-    const path = require('path');
-    const fs = require('fs');
-    const fullPath = path.resolve(application.cvFilePath);
-    
-    if (!fs.existsSync(fullPath)) {
+    // Check file existence
+    const cvPath = path.join(__dirname, '..', application.cvFilePath);
+    if (!fs.existsSync(cvPath)) {
       return res.status(404).json({
         success: false,
-        error: 'CV file not found on server'
+        error: 'CV file not found'
       });
     }
     
-    res.download(fullPath);
+    // Send file with proper headers
+    const filename = path.basename(application.cvFilePath);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'application/pdf');
+    
+    // Stream the file
+    const fileStream = fs.createReadStream(cvPath);
+    fileStream.pipe(res);
   } catch (error) {
     console.error('Download CV error:', error);
     res.status(500).json({

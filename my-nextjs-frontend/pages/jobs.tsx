@@ -37,17 +37,29 @@ export default function Jobs() {
         const fetchJobs = async () => {
             try {
                 setIsLoading(true);
-                // Fetch jobs from API
-                const response = await fetch('http://localhost:5000/api/jobs');
+                // Fetch jobs from API - use the public or latest endpoint
+                const response = await fetch('http://localhost:5000/api/jobs/public');
                 
                 if (!response.ok) {
-                    throw new Error("Failed to fetch jobs");
+                    // Instead of throwing, handle the error gracefully
+                    const errorText = await response.text();
+                    console.error(`API Error (${response.status}):`, errorText);
+                    setError(`Failed to load jobs: ${response.status}`);
+                    setIsLoading(false);
+                    return; // Exit early
                 }
                 
                 const data = await response.json();
                 console.log("Jobs from API:", data.jobs);
                 
-                // Filter for accepted jobs only
+                if (!data.jobs || !Array.isArray(data.jobs)) {
+                    console.error("Invalid data format:", data);
+                    setError("Invalid data received from server");
+                    setIsLoading(false);
+                    return;
+                }
+                
+                // Filter for accepted jobs only (if needed)
                 const accepted = data.jobs.filter((job: Job) => job.status === "Accepted");
                 console.log("Filtered accepted jobs:", accepted);
                 
@@ -55,7 +67,7 @@ export default function Jobs() {
                 setAcceptedJobs(accepted);
             } catch (err) {
                 console.error("Error fetching jobs:", err);
-                setError("Failed to load jobs. Please try again later.");
+                setError("Network error. Please check your connection.");
             } finally {
                 setIsLoading(false);
             }
