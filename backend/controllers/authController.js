@@ -17,7 +17,7 @@ const generateToken = (user) => {
 // Register a new user
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, adminCode } = req.body;
+    const { name, email, password } = req.body;
     
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -28,8 +28,8 @@ exports.register = async (req, res) => {
       });
     }
     
-    // Determine if this should be an admin user
-    const role = adminCode === process.env.ADMIN_SECRET_CODE ? 'admin' : 'user';
+    // Always set role as 'user' regardless of adminCode
+    const role = 'user';
     
     // Create new user
     const user = new User({
