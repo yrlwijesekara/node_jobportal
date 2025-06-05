@@ -167,46 +167,60 @@ export default function ReceivedCVs() {
         return;
       }
       
+      // For debugging only
+      console.log(`Attempting to download CV for: ${app._id}`);
+      console.log(`Authorization token (first 10 chars): ${token.substring(0, 10)}...`);
+      
       // Show loading indicator
       setIsDownloading(app._id);
       
-      // Use fetch instead of window.open to properly handle authentication
+      // Modified fetch with better options
       const response = await fetch(`http://localhost:5000/api/applications/${app._id}/cv`, {
+        method: 'GET',
         headers: {
-          Authorization: `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache'
+        },
+        // Remove credentials if CORS is an issue
+        // credentials: 'include' 
       });
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Download CV error:", errorText);
-        alert("Failed to download CV. Please ensure the file exists.");
+        console.error(`Download error (${response.status}):`, errorText);
+        alert(`Failed to download CV: ${response.status} ${response.statusText}`);
         return;
       }
       
-      // Get filename from response headers or use a default name
+      // Convert to blob and create download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      
+      // Get filename from header or create default
       const contentDisposition = response.headers.get('content-disposition');
-      let filename = 'cv-document.pdf';
+      let filename = 'cv-file.pdf';
       
       if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-        if (filenameMatch) {
-          filename = filenameMatch[1];
+        const matches = /filename="([^"]+)"/.exec(contentDisposition);
+        if (matches && matches[1]) {
+          filename = matches[1];
         }
       }
       
-      // Convert response to blob and download
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Cleanup
+      setTimeout(() => {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+      
     } catch (err) {
-      console.error("Error downloading CV:", err);
+      console.error("Download error:", err);
       alert("Network error while downloading CV. Please try again.");
     } finally {
       setIsDownloading(null);
@@ -378,11 +392,11 @@ export default function ReceivedCVs() {
                             Edit
                           </button>
                           <button
-                            className={`${viewerStyles.tableBtn} ${viewerStyles.tableDownloadBtn}`}
+                            className={`${styles.downloadBtn}`}
                             onClick={() => handleDownloadCV(app)}
                             disabled={isDownloading === app._id}
                           >
-                            {isDownloading === app._id ? "Downloading..." : "📥 CV"}
+                            {isDownloading === app._id ? "Downloading..." : "📥 Download CV"}
                           </button>
                           <button
                             className={`${viewerStyles.tableBtn} ${viewerStyles.tableDeleteBtn}`}

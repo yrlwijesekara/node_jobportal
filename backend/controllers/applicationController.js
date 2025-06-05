@@ -331,40 +331,48 @@ exports.deleteApplication = async (req, res) => {
   }
 };
 
-// Download CV - admin only
+// Download CV file
 exports.downloadCV = async (req, res) => {
   try {
+    console.log("Download CV request received for ID:", req.params.id);
+    
     const application = await Application.findById(req.params.id);
-    
     if (!application) {
-      return res.status(404).json({
-        success: false,
-        error: 'Application not found'
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Application not found' 
       });
     }
     
-    // Check file existence
-    const cvPath = path.join(__dirname, '..', application.cvFilePath);
+    // Important: Log the file path to debug
+    console.log("CV Path:", application.cvFilePath);
+    
+    // Check if file exists - important!
+    if (!application.cvFilePath) {
+      return res.status(404).json({
+        success: false,
+        error: 'No CV file path found for this application'
+      });
+    }
+    
+    const cvPath = path.resolve(__dirname, '..', application.cvFilePath);
+    
+    // Check if file exists
     if (!fs.existsSync(cvPath)) {
+      console.error("File not found at path:", cvPath);
       return res.status(404).json({
         success: false,
-        error: 'CV file not found'
+        error: 'CV file not found on server'
       });
     }
     
-    // Send file with proper headers
-    const filename = path.basename(application.cvFilePath);
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.setHeader('Content-Type', 'application/pdf');
-    
-    // Stream the file
-    const fileStream = fs.createReadStream(cvPath);
-    fileStream.pipe(res);
+    // Send file correctly
+    res.download(cvPath);
   } catch (error) {
     console.error('Download CV error:', error);
     res.status(500).json({
       success: false,
-      error: 'Server error while downloading CV'
+      error: 'Server error'
     });
   }
 };
