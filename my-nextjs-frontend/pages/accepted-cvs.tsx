@@ -99,7 +99,7 @@ export default function AcceptedCVs() {
     if (search) {
       const filtered = shortlistedApplications.filter((app) =>
         app.nameWithInitials.toLowerCase().includes(search.toLowerCase()) ||
-        (app.job.type || app.job.position || "").toLowerCase().includes(search.toLowerCase())
+        (app.job?.type || app.job?.position || "").toLowerCase().includes(search.toLowerCase())
       );
       setFilteredApplications(filtered);
     } else {
@@ -189,7 +189,7 @@ export default function AcceptedCVs() {
         search 
           ? updatedApplications.filter(app => 
               app.nameWithInitials.toLowerCase().includes(search.toLowerCase()) ||
-              (app.job.type || app.job.position || "").toLowerCase().includes(search.toLowerCase())
+              (app.job?.type || app.job?.position || "").toLowerCase().includes(search.toLowerCase())
             )
           : updatedApplications
       );
@@ -296,7 +296,7 @@ export default function AcceptedCVs() {
                   ) : (
                     filteredApplications.map((app) => (
                       <tr key={app._id}>
-                        <td>{app.job.type || app.job.position || "Unknown Job"}</td>
+                        <td>{app.job?.type || app.job?.position || "Unknown Job"}</td>
                         <td>{app.nameWithInitials}</td>
                         <td>{app.email}</td>
                         <td>
@@ -521,7 +521,7 @@ export default function AcceptedCVs() {
                 <div style={{ marginBottom: "20px" }}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", rowGap: "10px" }}>
                     <strong>Job Title:</strong>
-                    <span>{viewingApp.job.type || viewingApp.job.position || "Unknown Job"}</span>
+                    <span>{viewingApp.job?.type || viewingApp.job?.position || "Unknown Job"}</span>
                     
                     <strong>Applicant Name:</strong>
                     <span>{viewingApp.fullName}</span>

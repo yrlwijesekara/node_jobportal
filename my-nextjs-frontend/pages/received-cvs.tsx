@@ -335,7 +335,7 @@ export default function ReceivedCVs() {
                   ) : (
                     filteredApplications.map((app, idx) => (
                       <tr key={app._id}>
-                        <td>{app.job.type || app.job.position || "Unknown Job"}</td>
+                        <td>{app.job?.type || app.job?.position || "Unknown Job"}</td>
                         <td>{app.nameWithInitials}</td>
                         <td>{new Date(app.createdAt).toLocaleDateString()}</td>
                         <td>
