@@ -38,6 +38,21 @@ export default function Home() {
         </section>
       </div>
 
+      {/* Add this new section after the banner and before Latest Jobs */}
+      <section className={styles.accountNotice}>
+        <div className={styles.noticeContainer}>
+          <h2 className={styles.noticeTitle}>Looking for career opportunities?</h2>
+          <p className={styles.noticeText}>
+            Please <a href="/login" className={styles.noticeLink}>login</a> or <a href="/signup" className={styles.noticeLink}>register</a> to apply for job positions. 
+            Creating an account allows you to track your applications and receive updates.
+          </p>
+          <div className={styles.noticeButtons}>
+            <a href="/login" className={styles.loginBtn}>Login</a>
+            <a href="/signup" className={styles.registerBtn}>Register</a>
+          </div>
+        </div>
+      </section>
+
       {/* Latest Jobs Section */}
       <LatestJobs />
 

@@ -19,6 +19,12 @@ export default function Signup() {
       return;
     }
     
+    // Add password length validation
+    if (password.length < 6) {
+      setError('Password must be at least 8 characters long');
+      return;
+    }
+    
     // Validate password match
     if (password !== confirmPassword) {
       setError('Passwords didn\'t match');
@@ -100,6 +106,9 @@ export default function Signup() {
                 placeholder="Create a password"
                 required
               />
+              <span className={styles.passwordHelper}>
+                Password must be at least 8 characters long
+              </span>
             </div>
             <div className={styles.registerInputGroup}>
               <label className={styles.registerLabel}>Confirm Password</label>

@@ -328,4 +328,11 @@
   box-sizing: border-box;
 }
 
+.passwordHelper {
+  font-size: 12px;
+  color: #f50d0d;
+  margin-top: 4px;
+  display: block;
+}
+
 
