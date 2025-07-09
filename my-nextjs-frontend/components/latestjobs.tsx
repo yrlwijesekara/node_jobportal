@@ -35,16 +35,8 @@ export default function LatestJobs() {
         }
         
         const data = await response.json();
-        
-        // Filter accepted jobs and take most recent 4
-        const acceptedJobs = data.jobs
-          .filter((job: Job) => job.status === "Accepted")
-          .sort((a: Job, b: Job) => 
-            new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime()
-          )
-          .slice(0, 4);
-        
-        setJobs(acceptedJobs);
+        // Only keep the latest 6 jobs
+        setJobs((data.jobs || []).slice(0, 6));
       } catch (err) {
         console.error('Error fetching latest jobs:', err);
         setError('Failed to load latest job opportunities');
@@ -56,13 +48,13 @@ export default function LatestJobs() {
     fetchJobs();
   }, []);
 
+  if (isLoading) return <div className={styles.loadingContainer}>Loading latest opportunities...</div>;
+
   return (
     <section className={styles.jobSection}>
       <h1 className={styles.sectionTitle}>Latest Job Opportunities</h1>
       
-      {isLoading ? (
-        <div className={styles.loadingContainer}>Loading latest opportunities...</div>
-      ) : error ? (
+      {error ? (
         <div className={styles.errorContainer}>{error}</div>
       ) : jobs.length === 0 ? (
         <p className={styles.noJobs}>No job positions available at the moment.</p>

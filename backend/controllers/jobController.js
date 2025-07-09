@@ -77,8 +77,7 @@ exports.getLatestJobs = async (req, res) => {
   try {
     const jobs = await Job.find({ status: 'Accepted' })
       .sort('-createdAt')
-      .limit(4); // Get only the 4 most recent jobs
-      
+      .limit(6); // Get the 6 most recent jobs
     res.status(200).json({
       success: true,
       count: jobs.length,

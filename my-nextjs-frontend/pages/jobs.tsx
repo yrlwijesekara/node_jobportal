@@ -161,8 +161,8 @@ export default function Jobs() {
             {/* Cards Section */}
             <section className={styles.cards} style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(4, 1fr)", // Changed from repeat(3, 1fr)
-                gap: "30px", // Reduced gap to fit 4 cards
+                gridTemplateColumns: "repeat(3, 1fr)", // Changed to 3 columns
+                gap: "30px",
                 padding: "0 20px 40px",
                 justifyItems: "center",
             }}>
@@ -170,7 +170,7 @@ export default function Jobs() {
                     textAlign: 'center',
                     margin: '30px 0',
                     color: '#0055A2',
-                    gridColumn: "1 / span 4", // Changed from span 3 to span 4
+                    gridColumn: "1 / span 3", // Changed to span 3
                     fontSize: "32px",
                     fontWeight: "bold",
                     borderBottom: "2px solid #0055A2",
@@ -182,18 +182,18 @@ export default function Jobs() {
                 </h1>
 
                 {isLoading ? (
-                    <div style={{ textAlign: 'center', gridColumn: "1 / span 4" }}> {/* Changed from span 3 to span 4 */}
+                    <div style={{ textAlign: 'center', gridColumn: "1 / span 3" }}>
                         <p>Loading jobs...</p>
                     </div>
                 ) : error ? (
-                    <div style={{ textAlign: 'center', gridColumn: "1 / span 4", color: "red" }}> {/* Changed from span 3 to span 4 */}
+                    <div style={{ textAlign: 'center', gridColumn: "1 / span 3", color: "red" }}>
                         <p>{error}</p>
                     </div>
                 ) : acceptedJobs.length === 0 ? (
                     <p style={{
                         textAlign: 'center',
                         padding: '20px',
-                        gridColumn: "1 / span 4" /* Changed from span 3 to span 4 */
+                        gridColumn: "1 / span 3"
                     }}>
                         {selectedType
                             ? `No ${selectedType} positions available at the moment.`
